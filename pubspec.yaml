@@ -21,6 +21,7 @@ dependencies:
   cloud_firestore: ^5.0.0
   firebase_storage: ^12.0.0
   firebase_messaging: ^15.0.0
+  google_sign_in: ^6.2.1
 
   # Navigation & State
   go_router: ^13.0.0

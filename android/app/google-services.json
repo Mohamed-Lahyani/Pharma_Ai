@@ -12,7 +12,20 @@
           "package_name": "com.example.pharma_ai"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "379830402098-adf1m0su4hvu2h1389fgqtd51l8mtjip.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pharma_ai",
+            "certificate_hash": "3f89b97a25a4c55d903f89e5b979d602393346fa"
+          }
+        },
+        {
+          "client_id": "379830402098-664onrvhj6n13k96bb8avm089v62a9s7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBdD31gMaWVkdbdg1ncjL0GLFtSTJ_qDcM"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "379830402098-664onrvhj6n13k96bb8avm089v62a9s7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

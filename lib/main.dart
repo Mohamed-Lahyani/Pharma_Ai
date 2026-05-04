@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'features/auth/login_screen.dart';
+import 'features/auth/register_screen.dart';
 import 'features/admin/admin_home_screen.dart';
 import 'features/client/home/client_home_screen.dart';
 
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const LoginScreen(),
         '/admin': (context) => const AdminHomeScreen(),
         '/client': (context) => const ClientHomeScreen(),
+        '/register':(context) => const RegisterScreen(),
       },
     );
   }
