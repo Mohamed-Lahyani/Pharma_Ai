@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'medications_screen.dart';
+
+// ── AJOUT : traductions ───────────────────────────────────────
+import 'package:pharma_ai/core/l10n/app_localizations.dart';
+
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
@@ -10,14 +14,11 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  int _selectedIndex = 0;
-
-  // Statistiques
-  int totalMedications = 0;
-  int pendingOrdonnances = 0;
+  int totalMedications    = 0;
+  int pendingOrdonnances  = 0;
   int lowStockMedications = 0;
-  int totalClients = 0;
-  bool _isLoading = true;
+  int totalClients        = 0;
+  bool _isLoading         = true;
 
   @override
   void initState() {
@@ -25,38 +26,29 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     _loadStats();
   }
 
-  // Charger les statistiques depuis Firestore
   Future<void> _loadStats() async {
     try {
-      // Total médicaments
       final meds = await FirebaseFirestore.instance
-          .collection('medications')
-          .get();
+          .collection('medications').get();
 
-      // Ordonnances en attente
       final pending = await FirebaseFirestore.instance
           .collection('ordonnances')
-          .where('status', isEqualTo: 'pending')
-          .get();
+          .where('status', isEqualTo: 'pending').get();
 
-      // Stock critique (moins de 5)
       final lowStock = await FirebaseFirestore.instance
           .collection('medications')
-          .where('stock', isLessThan: 5)
-          .get();
+          .where('stock', isLessThan: 5).get();
 
-      // Total clients
       final clients = await FirebaseFirestore.instance
           .collection('users')
-          .where('role', isEqualTo: 'client')
-          .get();
+          .where('role', isEqualTo: 'client').get();
 
       setState(() {
-        totalMedications = meds.docs.length;
-        pendingOrdonnances = pending.docs.length;
+        totalMedications    = meds.docs.length;
+        pendingOrdonnances  = pending.docs.length;
         lowStockMedications = lowStock.docs.length;
-        totalClients = clients.docs.length;
-        _isLoading = false;
+        totalClients        = clients.docs.length;
+        _isLoading          = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
@@ -65,18 +57,30 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── AJOUT : récupérer les traductions ─────────────────────
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text(
-          'PharmaAI Admin',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        // ✅ Traduit
+        title: Text(
+          l10n.appName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF1565C0),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            // ✅ Traduit
+            tooltip: l10n.settings,
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
+            // ✅ Traduit
+            tooltip: l10n.signOut,
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               Navigator.pushReplacementNamed(context, '/');
@@ -94,7 +98,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Message de bienvenue
+
+              // ── Bannière de bienvenue ───────────────────
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -102,21 +107,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   color: const Color(0xFF1565C0),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Bonjour, Pharmacien 👨‍⚕️',
-                      style: TextStyle(
+                      // ✅ Traduit
+                      l10n.helloPharmacie,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'Voici le résumé de votre pharmacie',
-                      style: TextStyle(
+                      // ✅ Traduit
+                      l10n.statistics,
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
                       ),
@@ -127,10 +134,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
               const SizedBox(height: 24),
 
-              // Titre statistiques
-              const Text(
-                'Statistiques',
-                style: TextStyle(
+              Text(
+                // ✅ Traduit
+                l10n.statistics,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -138,7 +145,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
               const SizedBox(height: 12),
 
-              // Grille des statistiques
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
@@ -148,27 +154,31 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 childAspectRatio: 1.4,
                 children: [
                   _buildStatCard(
-                    titre: 'Médicaments',
+                    // ✅ Traduit
+                    titre : l10n.medications,
                     valeur: totalMedications.toString(),
-                    icone: Icons.medication,
+                    icone : Icons.medication,
                     couleur: const Color(0xFF1565C0),
                   ),
                   _buildStatCard(
-                    titre: 'En attente',
+                    // ✅ Traduit
+                    titre : l10n.pending,
                     valeur: pendingOrdonnances.toString(),
-                    icone: Icons.pending_actions,
+                    icone : Icons.pending_actions,
                     couleur: const Color(0xFFF9A825),
                   ),
                   _buildStatCard(
-                    titre: 'Stock critique',
+                    // ✅ Traduit
+                    titre : l10n.criticalStock,
                     valeur: lowStockMedications.toString(),
-                    icone: Icons.warning_amber,
+                    icone : Icons.warning_amber,
                     couleur: const Color(0xFFC62828),
                   ),
                   _buildStatCard(
-                    titre: 'Clients',
+                    // ✅ Traduit
+                    titre : l10n.clients,
                     valeur: totalClients.toString(),
-                    icone: Icons.people,
+                    icone : Icons.people,
                     couleur: const Color(0xFF2E7D32),
                   ),
                 ],
@@ -176,10 +186,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
               const SizedBox(height: 24),
 
-              // Titre actions rapides
-              const Text(
-                'Actions rapides',
-                style: TextStyle(
+              Text(
+                // ✅ Traduit
+                l10n.quickActions,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -187,36 +197,35 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
               const SizedBox(height: 12),
 
-              // Boutons d'actions
               _buildActionButton(
-                titre: 'Gérer les médicaments',
-                sousTitre: 'Ajouter, modifier, supprimer',
-                icone: Icons.medication_liquid,
-                couleur: const Color(0xFF1565C0),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MedicationsScreen(),
-                    ),
-                  );
-                },
+                // ✅ Traduit
+                titre    : l10n.manageMedications,
+                sousTitre: l10n.addMedication,
+                icone    : Icons.medication_liquid,
+                couleur  : const Color(0xFF1565C0),
+                onTap    : () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const MedicationsScreen()),
+                ),
               ),
               const SizedBox(height: 10),
               _buildActionButton(
-                titre: 'Voir les ordonnances',
-                sousTitre: '$pendingOrdonnances ordonnance(s) en attente',
-                icone: Icons.description,
-                couleur: const Color(0xFFF9A825),
-                onTap: () {},
+                // ✅ Traduit
+                titre    : l10n.viewPrescriptions,
+                sousTitre: l10n.pending,
+                icone    : Icons.description,
+                couleur  : const Color(0xFFF9A825),
+                onTap    : () {},
               ),
               const SizedBox(height: 10),
               _buildActionButton(
-                titre: 'Alertes de stock',
-                sousTitre: '$lowStockMedications médicament(s) en rupture',
-                icone: Icons.inventory,
-                couleur: const Color(0xFFC62828),
-                onTap: () {},
+                // ✅ Traduit
+                titre    : l10n.stockAlerts,
+                sousTitre: l10n.criticalStock,
+                icone    : Icons.inventory,
+                couleur  : const Color(0xFFC62828),
+                onTap    : () {},
               ),
             ],
           ),
@@ -225,12 +234,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  // Widget carte statistique
+  // ── Carte statistique ─────────────────────────────────────────
   Widget _buildStatCard({
-    required String titre,
-    required String valeur,
+    required String   titre,
+    required String   valeur,
     required IconData icone,
-    required Color couleur,
+    required Color    couleur,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -270,10 +279,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
               Text(
                 titre,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
@@ -282,12 +288,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  // Widget bouton action
+  // ── Bouton action rapide ──────────────────────────────────────
   Widget _buildActionButton({
-    required String titre,
-    required String sousTitre,
-    required IconData icone,
-    required Color couleur,
+    required String       titre,
+    required String       sousTitre,
+    required IconData     icone,
+    required Color        couleur,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -329,10 +335,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   Text(
                     sousTitre,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ],
               ),

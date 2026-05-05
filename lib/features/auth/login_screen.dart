@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pharma_ai/features/auth/register_screen.dart';
 
+// ── AJOUT : traductions ───────────────────────────────────────
+import 'package:pharma_ai/core/l10n/app_localizations.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -57,6 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         setState(() {
+          // Message d'erreur — pas de clé arb prévue, on garde en dur
           _errorMessage = 'Utilisateur introuvable dans la base de données.';
         });
       }
@@ -83,13 +87,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final googleProvider = GoogleAuthProvider();
-
       final userCredential = await FirebaseAuth.instance
-          .signInWithPopup(googleProvider); // ← Géré directement par Firebase
+          .signInWithPopup(googleProvider);
 
       final user = userCredential.user!;
-
-      final doc = await FirebaseFirestore.instance
+      final doc  = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
@@ -99,12 +101,12 @@ class _LoginScreenState extends State<LoginScreen> {
             .collection('users')
             .doc(user.uid)
             .set({
-          'uid'       : user.uid,
-          'name'      : user.displayName ?? 'Utilisateur',
-          'email'     : user.email ?? '',
-          'phone'     : '',
-          'role'      : 'client',
-          'createdAt' : FieldValue.serverTimestamp(),
+          'uid'      : user.uid,
+          'name'     : user.displayName ?? 'Utilisateur',
+          'email'    : user.email ?? '',
+          'phone'    : '',
+          'role'     : 'client',
+          'createdAt': FieldValue.serverTimestamp(),
         });
       }
 
@@ -124,6 +126,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── AJOUT : récupérer les traductions ─────────────────────
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
@@ -152,18 +157,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'PharmaAI',
-                      style: TextStyle(
+                    Text(
+                      // ✅ Traduit
+                      l10n.appName,
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1565C0),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Connectez-vous à votre compte',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    Text(
+                      // ✅ Traduit
+                      l10n.signIn,
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                   ],
                 ),
@@ -172,9 +179,10 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 50),
 
               // ── Champ Email ─────────────────────────────────
-              const Text(
-                'Email',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              Text(
+                // ✅ Traduit
+                l10n.email,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -193,9 +201,10 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
 
               // ── Champ Mot de passe ──────────────────────────
-              const Text(
-                'Mot de passe',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              Text(
+                // ✅ Traduit
+                l10n.password,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -261,9 +270,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                    'Se connecter',
-                    style: TextStyle(
+                      : Text(
+                    // ✅ Traduit
+                    l10n.signIn,
+                    style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -316,13 +326,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // ✅ Logo Google dessiné en Flutter pur
-                      // Pas d'Image.network → pas d'erreur CORS
                       const _GoogleIcon(),
                       const SizedBox(width: 12),
-                      const Text(
+                      Text(
+                        // ✅ Traduit — ajoute la clé dans les .arb si absente
                         'Continuer avec Google',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF3C4043),
@@ -353,9 +362,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         );
                       },
-                      child: const Text(
-                        "S'inscrire",
-                        style: TextStyle(
+                      child: Text(
+                        // ✅ Traduit
+                        l10n.signUp,
+                        style: const TextStyle(
                           color: Color(0xFF1565C0),
                           fontWeight: FontWeight.bold,
                         ),
@@ -374,11 +384,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ================================================================
-// Logo Google dessiné avec des widgets Flutter
-// 4 lettres "G" colorées → rouge, bleu, jaune, vert
-// Aucune image externe, aucun réseau, aucun CORS
-// ================================================================
+// ── Classes _GoogleIcon et _GoogleIconPainter — inchangées ────
 class _GoogleIcon extends StatelessWidget {
   const _GoogleIcon();
 
@@ -389,7 +395,6 @@ class _GoogleIcon extends StatelessWidget {
       height: 24,
       child: Stack(
         children: [
-          // Cercle de fond blanc
           Container(
             width: 24,
             height: 24,
@@ -398,7 +403,6 @@ class _GoogleIcon extends StatelessWidget {
               shape: BoxShape.circle,
             ),
           ),
-          // Les 4 segments colorés du G Google
           CustomPaint(
             size: const Size(24, 24),
             painter: _GoogleIconPainter(),
@@ -421,35 +425,22 @@ class _GoogleIconPainter extends CustomPainter {
       ..strokeWidth = size.width * 0.22
       ..strokeCap = StrokeCap.butt;
 
-    // Rouge — haut gauche
     paint.color = const Color(0xFFEA4335);
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72),
-      -2.4, 1.55, false, paint,
-    );
+    canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72),
+        -2.4, 1.55, false, paint);
 
-    // Bleu — haut droit + bas droit
     paint.color = const Color(0xFF4285F4);
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72),
-      -0.85, 1.55, false, paint,
-    );
+    canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72),
+        -0.85, 1.55, false, paint);
 
-    // Jaune — bas gauche
     paint.color = const Color(0xFFFBBC05);
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72),
-      0.70, 1.55, false, paint,
-    );
+    canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72),
+        0.70, 1.55, false, paint);
 
-    // Vert — haut gauche bas
     paint.color = const Color(0xFF34A853);
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72),
-      2.25, 1.0, false, paint,
-    );
+    canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72),
+        2.25, 1.0, false, paint);
 
-    // Barre horizontale bleue du G (partie droite)
     paint
       ..color = const Color(0xFF4285F4)
       ..strokeWidth = size.width * 0.22

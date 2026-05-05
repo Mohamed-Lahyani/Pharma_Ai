@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// ── AJOUT : traductions ───────────────────────────────────────
+import 'package:pharma_ai/core/l10n/app_localizations.dart';
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -35,49 +38,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _register() async {
     setState(() => _errorMessage = '');
-
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {
-      // 1️⃣ Créer le compte Firebase Auth
       final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
         email:    _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // 2️⃣ Mettre à jour le nom dans Auth
       await credential.user!.updateDisplayName(_nameController.text.trim());
 
-      // 3️⃣ Créer le document dans Firestore avec rôle "client"
       await FirebaseFirestore.instance
           .collection('users')
           .doc(credential.user!.uid)
           .set({
-        'uid'       : credential.user!.uid,
-        'name'      : _nameController.text.trim(),
-        'email'     : _emailController.text.trim(),
-        'phone'     : _phoneController.text.trim(),
-        'role'      : 'client',
-        'createdAt' : FieldValue.serverTimestamp(),
+        'uid'      : credential.user!.uid,
+        'name'     : _nameController.text.trim(),
+        'email'    : _emailController.text.trim(),
+        'phone'    : _phoneController.text.trim(),
+        'role'     : 'client',
+        'createdAt': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
+        // ✅ Traduit
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Compte créé avec succès ! Vous pouvez vous connecter.'),
-            backgroundColor: Color(0xFF2E7D32),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Text(l10n.accountCreated),
+            backgroundColor: const Color(0xFF2E7D32),
+            duration: const Duration(seconds: 3),
           ),
         );
-
-        // Déconnecter et retourner au login
         await FirebaseAuth.instance.signOut();
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
+      // Les messages d'erreur Firebase restent en dur
+      // (pas de clés arb prévues pour eux)
       setState(() {
         switch (e.code) {
           case 'email-already-in-use':
@@ -102,8 +102,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── AJOUT : récupérer les traductions ─────────────────────
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      // Pas de AppBar → pas de flèche retour automatique
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -115,7 +117,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const SizedBox(height: 40),
 
-                // ── Logo et titre — IDENTIQUE au LoginScreen ────
+                // ── Logo et titre ───────────────────────────────
                 Center(
                   child: Column(
                     children: [
@@ -133,18 +135,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'PharmaAI',
-                        style: TextStyle(
+                      Text(
+                        // ✅ Traduit
+                        l10n.appName,
+                        style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF1565C0),
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Créer un nouveau compte',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                      Text(
+                        // ✅ Traduit
+                        l10n.createAccount,
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -180,9 +185,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
 
                 // ── Nom complet ─────────────────────────────────
-                const Text(
-                  'Nom complet',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                Text(
+                  // ✅ Traduit
+                  l10n.fullName,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -210,9 +217,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
 
                 // ── Email ───────────────────────────────────────
-                const Text(
-                  'Email',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                Text(
+                  // ✅ Traduit
+                  l10n.email,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -241,9 +250,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
 
                 // ── Téléphone ───────────────────────────────────
-                const Text(
+                Text(
+                  // Pas de clé arb — on garde en dur
                   'Téléphone (optionnel)',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -262,9 +273,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
 
                 // ── Mot de passe ────────────────────────────────
-                const Text(
-                  'Mot de passe',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                Text(
+                  // ✅ Traduit
+                  l10n.password,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -299,9 +312,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
 
                 // ── Confirmer mot de passe ──────────────────────
-                const Text(
-                  'Confirmer le mot de passe',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                Text(
+                  // ✅ Traduit
+                  l10n.newPassword,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -350,9 +365,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                      "S'inscrire",
-                      style: TextStyle(
+                        : Text(
+                      // ✅ Traduit
+                      l10n.signUp,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -373,9 +389,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
-                        child: const Text(
-                          'Se connecter',
-                          style: TextStyle(
+                        child: Text(
+                          // ✅ Traduit
+                          l10n.signIn,
+                          style: const TextStyle(
                             color: Color(0xFF1565C0),
                             fontWeight: FontWeight.bold,
                           ),

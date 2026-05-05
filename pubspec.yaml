@@ -54,4 +54,5 @@ dev_dependencies:
   flutter_lints: ^4.0.0
 
 flutter:
+  generate: true          # ← AJOUTÉ : active la génération de AppLocalizations
   uses-material-design: true
