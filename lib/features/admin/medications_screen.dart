@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-
-// ── AJOUT : traductions ───────────────────────────────────────
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
+import 'package:pharma_ai/core/theme/app_colors.dart';
 
 class MedicationsScreen extends StatefulWidget {
   const MedicationsScreen({super.key});
@@ -16,11 +15,11 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  static const Color primaryColor   = Color(0xFF1565C0);
-  static const Color secondaryColor = Color(0xFF2E7D32);
-  static const Color alertColor     = Color(0xFFF9A825);
-  static const Color dangerColor    = Color(0xFFC62828);
-  static const Color bgColor        = Color(0xFFF5F7FA);
+  // ✅ Couleurs sémantiques conservées (statut) — non adaptatives intentionnellement
+  static const Color _couleurPrimaire   = Color(0xFF1565C0);
+  static const Color _couleurSuccess    = Color(0xFF2E7D32);
+  static const Color _couleurWarning    = Color(0xFFF9A825);
+  static const Color _couleurDanger     = Color(0xFFC62828);
 
   static const List<String> _categories = [
     'Antibiotique', 'Antidouleur', 'Anti-inflammatoire',
@@ -45,19 +44,17 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16)),
-        // ✅ Traduit
         title: Text(l10n.delete),
         content: Text('$name ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            // ✅ Traduit
             child: Text(l10n.cancel),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: dangerColor),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: _couleurDanger),
             onPressed: () => Navigator.pop(ctx, true),
-            // ✅ Traduit
             child: Text(l10n.delete,
                 style: const TextStyle(color: Colors.white)),
           ),
@@ -75,7 +72,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('"$name" supprimé'),
-            backgroundColor: secondaryColor,
+            backgroundColor: _couleurSuccess,
           ),
         );
       }
@@ -99,24 +96,23 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ── AJOUT : récupérer les traductions ─────────────────────
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      // ✅ Fond adaptatif
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
-        // ✅ Traduit
         title: Text(
           l10n.medications,
           style: const TextStyle(
               color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: primaryColor,
+        // ✅ AppBar adaptative
+        backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
-            // ✅ Traduit
             tooltip: l10n.addMedication,
             onPressed: () => _openMedicationForm(),
           ),
@@ -132,9 +128,10 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                // ✅ Traduit
                 hintText: l10n.searchMedication,
-                prefixIcon: const Icon(Icons.search, color: primaryColor),
+                prefixIcon: Icon(Icons.search,
+                    // ✅ Icône couleur primaire adaptative
+                    color: Theme.of(context).colorScheme.primary),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                   icon: const Icon(Icons.clear),
@@ -145,14 +142,17 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                 )
                     : null,
                 filled: true,
-                fillColor: Colors.white,
+                // ✅ Fond input adaptatif
+                fillColor: AppColors.inputFill(context),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  // ✅ Bordure adaptative
+                  borderSide: BorderSide(
+                      color: AppColors.border(context)),
                 ),
               ),
               onChanged: (val) =>
@@ -169,8 +169,11 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: primaryColor),
+                  return Center(
+                    child: CircularProgressIndicator(
+                      // ✅ Couleur primaire adaptative
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   );
                 }
 
@@ -191,14 +194,17 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.medication_outlined,
-                            size: 64, color: Colors.grey.shade400),
+                            size: 64,
+                            // ✅ Icône adaptative
+                            color: AppColors.textSecondary(context)),
                         const SizedBox(height: 12),
                         Text(
-                          // ✅ Traduit
                           _searchQuery.isEmpty
                               ? l10n.medications
                               : '${l10n.searchMedication} : $_searchQuery',
-                          style: TextStyle(color: Colors.grey.shade600),
+                          // ✅ Texte adaptatif
+                          style: TextStyle(
+                              color: AppColors.textSecondary(context)),
                         ),
                       ],
                     ),
@@ -211,7 +217,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                   itemBuilder: (context, index) {
                     final doc  = docs[index];
                     final data = doc.data() as Map<String, dynamic>;
-                    final int stock     = data['stock'] ?? 0;
+                    final int stock       = data['stock'] ?? 0;
                     final bool isCritical = stock <= 5;
 
                     String expiryText = 'N/A';
@@ -225,11 +231,13 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
+                      // ✅ Couleur de la carte adaptative via le thème
+                      color: AppColors.surface(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: isCritical
                             ? const BorderSide(
-                            color: alertColor, width: 1.5)
+                            color: _couleurWarning, width: 1.5)
                             : BorderSide.none,
                       ),
                       elevation: 2,
@@ -238,18 +246,24 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                             horizontal: 16, vertical: 8),
                         leading: CircleAvatar(
                           backgroundColor: isCritical
-                              ? alertColor.withOpacity(0.15)
-                              : primaryColor.withOpacity(0.1),
+                          // ✅ .withValues() remplace .withOpacity()
+                              ? _couleurWarning.withValues(alpha: 0.15)
+                              : _couleurPrimaire.withValues(alpha: 0.1),
                           child: Icon(
                             Icons.medication,
-                            color:
-                            isCritical ? alertColor : primaryColor,
+                            color: isCritical
+                                ? _couleurWarning
+                                : _couleurPrimaire,
                           ),
                         ),
                         title: Text(
                           data['name'] ?? 'Inconnu',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            // ✅ Texte principal adaptatif
+                            color: AppColors.onSurface(context),
+                          ),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,28 +271,32 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Icon(Icons.category_outlined,
-                                    size: 13, color: Colors.grey),
+                                Icon(Icons.category_outlined,
+                                    size: 13,
+                                    // ✅ Icône adaptative
+                                    color: AppColors.textSecondary(context)),
                                 const SizedBox(width: 4),
                                 Text(
                                   data['category'] ?? 'Non défini',
                                   style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600),
+                                      // ✅ Texte secondaire adaptatif
+                                      color: AppColors.textSecondary(context)),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                const Icon(Icons.event_outlined,
-                                    size: 13, color: Colors.grey),
+                                Icon(Icons.event_outlined,
+                                    size: 13,
+                                    color: AppColors.textSecondary(context)),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Exp : $expiryText',
                                   style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600),
+                                      color: AppColors.textSecondary(context)),
                                 ),
                               ],
                             ),
@@ -291,18 +309,17 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                       : Icons.inventory_2_outlined,
                                   size: 13,
                                   color: isCritical
-                                      ? alertColor
-                                      : Colors.grey,
+                                      ? _couleurWarning
+                                      : AppColors.textSecondary(context),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  // ✅ Traduit avec placeholder
                                   l10n.stockUnits(stock),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: isCritical
-                                        ? alertColor
-                                        : Colors.grey.shade600,
+                                        ? _couleurWarning
+                                        : AppColors.textSecondary(context),
                                     fontWeight: isCritical
                                         ? FontWeight.bold
                                         : FontWeight.normal,
@@ -318,26 +335,31 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                           children: [
                             Text(
                               '${data['price'] ?? 0} DZD',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: primaryColor,
-                                  fontSize: 13),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                // ✅ Couleur primaire adaptative
+                                color: Theme.of(context).colorScheme.primary,
+                                fontSize: 13,
+                              ),
                             ),
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 InkWell(
-                                  onTap: () =>
-                                      _openMedicationForm(doc: doc),
-                                  child: const Icon(Icons.edit_outlined,
-                                      color: primaryColor, size: 20),
+                                  onTap: () => _openMedicationForm(doc: doc),
+                                  child: Icon(Icons.edit_outlined,
+                                      // ✅ Couleur primaire adaptative
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                      size: 20),
                                 ),
                                 const SizedBox(width: 12),
                                 InkWell(
                                   onTap: () => _deleteMedication(
                                       doc.id, data['name'] ?? '', l10n),
                                   child: const Icon(Icons.delete_outline,
-                                      color: dangerColor, size: 20),
+                                      color: _couleurDanger, size: 20),
                                 ),
                               ],
                             ),
@@ -356,9 +378,9 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
       // ── Bouton flottant ───────────────────────────────────────
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openMedicationForm(),
-        backgroundColor: primaryColor,
+        // ✅ Couleur primaire adaptative
+        backgroundColor: Theme.of(context).colorScheme.primary,
         icon: const Icon(Icons.add, color: Colors.white),
-        // ✅ Traduit
         label: Text(l10n.add,
             style: const TextStyle(color: Colors.white)),
       ),
@@ -391,8 +413,9 @@ class _MedicationFormState extends State<_MedicationForm> {
   DateTime? _selectedExpiryDate;
   bool      _isLoading = false;
 
-  static const Color primaryColor = Color(0xFF1565C0);
-  static const Color dangerColor  = Color(0xFFC62828);
+  // ✅ Couleurs sémantiques conservées (statut)
+  static const Color _couleurDanger  = Color(0xFFC62828);
+  static const Color _couleurSuccess = Color(0xFF2E7D32);
 
   @override
   void initState() {
@@ -439,8 +462,10 @@ class _MedicationFormState extends State<_MedicationForm> {
       helpText: "Date d'expiration",
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme:
-          const ColorScheme.light(primary: primaryColor),
+          colorScheme: ColorScheme.light(
+            // ✅ Couleur primaire adaptative dans le DatePicker
+            primary: Theme.of(context).colorScheme.primary,
+          ),
         ),
         child: child!,
       ),
@@ -480,11 +505,10 @@ class _MedicationFormState extends State<_MedicationForm> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            // ✅ Traduit
             content: Text(widget.doc == null
                 ? l10n.addMedication
                 : l10n.editMedication),
-            backgroundColor: const Color(0xFF2E7D32),
+            backgroundColor: _couleurSuccess,
           ),
         );
       }
@@ -493,7 +517,7 @@ class _MedicationFormState extends State<_MedicationForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur : $e'),
-            backgroundColor: dangerColor,
+            backgroundColor: _couleurDanger,
           ),
         );
       }
@@ -504,8 +528,7 @@ class _MedicationFormState extends State<_MedicationForm> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Traduit
-    final l10n         = AppLocalizations.of(context)!;
+    final l10n          = AppLocalizations.of(context)!;
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
@@ -521,26 +544,25 @@ class _MedicationFormState extends State<_MedicationForm> {
               // ── Titre du formulaire ─────────────────────────
               Center(
                 child: Text(
-                  // ✅ Traduit
                   widget.doc == null
                       ? l10n.addMedication
                       : l10n.editMedication,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize  : 20,
                     fontWeight: FontWeight.bold,
-                    color     : primaryColor,
+                    // ✅ Couleur primaire adaptative
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ),
               const SizedBox(height: 24),
 
               // ── Nom ─────────────────────────────────────────
-              // ✅ Traduit
-              _buildLabel(l10n.medicationName),
+              _buildLabel(context, l10n.medicationName),
               TextFormField(
                 controller: _nameController,
                 decoration: _inputDecoration(
-                    'Ex : Paracétamol 500mg', Icons.medication),
+                    context, 'Ex : Paracétamol 500mg', Icons.medication),
                 validator: (val) => (val == null || val.trim().isEmpty)
                     ? 'Champ requis'
                     : null,
@@ -548,12 +570,11 @@ class _MedicationFormState extends State<_MedicationForm> {
               const SizedBox(height: 16),
 
               // ── Catégorie ────────────────────────────────────
-              // ✅ Traduit
-              _buildLabel(l10n.category),
+              _buildLabel(context, l10n.category),
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
                 decoration: _inputDecoration(
-                    l10n.category, Icons.category_outlined),
+                    context, l10n.category, Icons.category_outlined),
                 items: widget.categories
                     .map((cat) => DropdownMenuItem(
                   value: cat,
@@ -574,13 +595,12 @@ class _MedicationFormState extends State<_MedicationForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ✅ Traduit
-                        _buildLabel(l10n.price),
+                        _buildLabel(context, l10n.price),
                         TextFormField(
                           controller: _priceController,
                           keyboardType: TextInputType.number,
                           decoration: _inputDecoration(
-                              '0.00', Icons.attach_money),
+                              context, '0.00', Icons.attach_money),
                           validator: (val) =>
                           (val == null || val.trim().isEmpty)
                               ? 'Requis'
@@ -594,13 +614,12 @@ class _MedicationFormState extends State<_MedicationForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ✅ Traduit
-                        _buildLabel(l10n.stock),
+                        _buildLabel(context, l10n.stock),
                         TextFormField(
                           controller: _stockController,
                           keyboardType: TextInputType.number,
                           decoration: _inputDecoration(
-                              '0', Icons.inventory_2),
+                              context, '0', Icons.inventory_2),
                           validator: (val) =>
                           (val == null || val.trim().isEmpty)
                               ? 'Requis'
@@ -614,11 +633,12 @@ class _MedicationFormState extends State<_MedicationForm> {
               const SizedBox(height: 16),
 
               // ── Date d'expiration ────────────────────────────
-              _buildLabel("Date d'expiration"),
+              _buildLabel(context, "Date d'expiration"),
               InkWell(
                 onTap: _pickExpiryDate,
                 child: InputDecorator(
                   decoration: _inputDecoration(
+                      context,
                       "Choisir une date",
                       Icons.calendar_today_outlined),
                   child: Text(
@@ -627,9 +647,10 @@ class _MedicationFormState extends State<_MedicationForm> {
                         : DateFormat('dd / MM / yyyy')
                         .format(_selectedExpiryDate!),
                     style: TextStyle(
+                      // ✅ Couleur adaptative selon l'état
                       color: _selectedExpiryDate == null
-                          ? Colors.grey.shade500
-                          : Colors.black87,
+                          ? AppColors.textSecondary(context)
+                          : AppColors.onSurface(context),
                     ),
                   ),
                 ),
@@ -637,11 +658,12 @@ class _MedicationFormState extends State<_MedicationForm> {
               const SizedBox(height: 16),
 
               // ── Description ──────────────────────────────────
-              _buildLabel('Description'),
+              _buildLabel(context, 'Description'),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
                 decoration: _inputDecoration(
+                    context,
                     'Posologie, indications...',
                     Icons.notes_outlined),
               ),
@@ -654,18 +676,20 @@ class _MedicationFormState extends State<_MedicationForm> {
                 child : ElevatedButton(
                   onPressed: _isLoading ? null : _save,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    // ✅ Couleur primaire adaptative
+                    backgroundColor:
+                    Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
                   child: _isLoading
                       ? const SizedBox(
-                    height: 22, width: 22,
-                    child: CircularProgressIndicator(
+                    height: 22,
+                    width : 22,
+                    child : CircularProgressIndicator(
                         color: Colors.white, strokeWidth: 2.5),
                   )
                       : Text(
-                    // ✅ Traduit
                     widget.doc == null ? l10n.add : l10n.save,
                     style: const TextStyle(
                         fontSize  : 16,
@@ -681,41 +705,54 @@ class _MedicationFormState extends State<_MedicationForm> {
     );
   }
 
-  Widget _buildLabel(String text) {
+  // ✅ context ajouté en paramètre pour accéder au thème
+  Widget _buildLabel(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize  : 13,
-            color     : Color(0xFF37474F)),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize  : 13,
+          // ✅ Couleur texte label adaptative
+          color: AppColors.onSurface(context),
+        ),
       ),
     );
   }
 
-  InputDecoration _inputDecoration(String hint, IconData icon) {
+  // ✅ context ajouté en paramètre pour accéder au thème
+  InputDecoration _inputDecoration(
+      BuildContext context, String hint, IconData icon) {
     return InputDecoration(
       hintText  : hint,
-      hintStyle : TextStyle(color: Colors.grey.shade400),
-      prefixIcon: Icon(icon, color: primaryColor, size: 20),
+      hintStyle : TextStyle(color: AppColors.textSecondary(context)),
+      prefixIcon: Icon(icon,
+          // ✅ Couleur primaire adaptative
+          color: Theme.of(context).colorScheme.primary,
+          size: 20),
       filled    : true,
-      fillColor : const Color(0xFFF5F7FA),
+      // ✅ Fond input adaptatif
+      fillColor : AppColors.inputFill(context),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide  : BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide  : BorderSide(color: Colors.grey.shade200),
+        // ✅ Bordure adaptative
+        borderSide: BorderSide(color: AppColors.border(context)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide  : const BorderSide(color: primaryColor, width: 1.5),
+        // ✅ Bordure focus adaptative
+        borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide  : const BorderSide(color: dangerColor),
+        // ✅ Couleur erreur conservée (sémantique)
+        borderSide: const BorderSide(color: _couleurDanger),
       ),
       contentPadding: const EdgeInsets.symmetric(
           horizontal: 16, vertical: 14),

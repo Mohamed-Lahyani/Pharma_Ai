@@ -1239,6 +1239,132 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Politique de confidentialité'**
   String get privacyPolicy;
+
+  /// No description provided for @notificationActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notif active'**
+  String get notificationActive;
+
+  /// No description provided for @noRemindersDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez vos rappels pour ne jamais oublier de prendre vos médicaments.'**
+  String get noRemindersDescription;
+
+  /// No description provided for @reminderAdded.
+  ///
+  /// In fr, this message translates to:
+  /// **'✅ Rappel ajouté avec succès'**
+  String get reminderAdded;
+
+  /// No description provided for @reminderUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'✅ Rappel mis à jour'**
+  String get reminderUpdated;
+
+  /// No description provided for @reminderDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappel supprimé'**
+  String get reminderDeleted;
+
+  /// No description provided for @deleteReminderConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le rappel pour'**
+  String get deleteReminderConfirm;
+
+  /// No description provided for @newReminder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau rappel'**
+  String get newReminder;
+
+  /// No description provided for @editReminder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le rappel'**
+  String get editReminder;
+
+  /// No description provided for @modify.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get modify;
+
+  /// No description provided for @errorOccurred.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue.'**
+  String get errorOccurred;
+
+  /// No description provided for @dosageOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dosage (optionnel)'**
+  String get dosageOptional;
+
+  /// No description provided for @notesOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes (optionnel)'**
+  String get notesOptional;
+
+  /// No description provided for @frequencyDaily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaque jour'**
+  String get frequencyDaily;
+
+  /// No description provided for @frequencyTwice.
+  ///
+  /// In fr, this message translates to:
+  /// **'2 fois par jour'**
+  String get frequencyTwice;
+
+  /// No description provided for @frequencyThrice.
+  ///
+  /// In fr, this message translates to:
+  /// **'3 fois par jour'**
+  String get frequencyThrice;
+
+  /// No description provided for @frequencyWeekly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaque semaine'**
+  String get frequencyWeekly;
+
+  /// No description provided for @frequencyAsNeeded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Si besoin'**
+  String get frequencyAsNeeded;
+
+  /// No description provided for @notifInfoDaily.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 notification planifiée par jour à cette heure.'**
+  String get notifInfoDaily;
+
+  /// No description provided for @notifInfoTwice.
+  ///
+  /// In fr, this message translates to:
+  /// **'2 notifications : à cette heure et 8h plus tard.'**
+  String get notifInfoTwice;
+
+  /// No description provided for @notifInfoThrice.
+  ///
+  /// In fr, this message translates to:
+  /// **'3 notifications : à cette heure, +6h et +12h.'**
+  String get notifInfoThrice;
+
+  /// No description provided for @notifInfoWeekly.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 notification planifiée par semaine à cette heure.'**
+  String get notifInfoWeekly;
 }
 
 class _AppLocalizationsDelegate

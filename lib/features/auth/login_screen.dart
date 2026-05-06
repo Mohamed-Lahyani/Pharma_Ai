@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pharma_ai/features/auth/register_screen.dart';
-
-// ── AJOUT : traductions ───────────────────────────────────────
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
+import 'package:pharma_ai/core/theme/app_colors.dart';
+
+// ✅ Import google_sign_in supprimé — non utilisé (signInWithPopup ne nécessite pas GoogleSignIn)
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -60,7 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         setState(() {
-          // Message d'erreur — pas de clé arb prévue, on garde en dur
           _errorMessage = 'Utilisateur introuvable dans la base de données.';
         });
       }
@@ -79,6 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // ─── Connexion Google ─────────────────────────────────────────
   Future<void> _loginWithGoogle() async {
     setState(() {
       _isGoogleLoading = true;
@@ -126,11 +126,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ── AJOUT : récupérer les traductions ─────────────────────
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      // ✅ Fond adaptatif
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -147,7 +147,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1565C0),
+                        // ✅ Couleur primaire adaptative
+                        color: Theme.of(context).colorScheme.primary,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Icon(
@@ -158,19 +159,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      // ✅ Traduit
                       l10n.appName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1565C0),
+                        // ✅ Couleur primaire adaptative
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      // ✅ Traduit
                       l10n.signIn,
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 14,
+                        // ✅ Texte secondaire adaptatif
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
                   ],
                 ),
@@ -180,9 +184,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ── Champ Email ─────────────────────────────────
               Text(
-                // ✅ Traduit
                 l10n.email,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  // ✅ Texte principal adaptatif
+                  color: AppColors.onSurface(context),
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -194,7 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12)),
                   filled: true,
-                  fillColor: Colors.white,
+                  // ✅ Fond input adaptatif
+                  fillColor: AppColors.inputFill(context),
                 ),
               ),
 
@@ -202,9 +211,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ── Champ Mot de passe ──────────────────────────
               Text(
-                // ✅ Traduit
                 l10n.password,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  // ✅ Texte principal adaptatif
+                  color: AppColors.onSurface(context),
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -223,7 +236,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12)),
                   filled: true,
-                  fillColor: Colors.white,
+                  // ✅ Fond input adaptatif
+                  fillColor: AppColors.inputFill(context),
                 ),
               ),
 
@@ -234,9 +248,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    // ✅ .withValues() remplace .withOpacity() — rouge sémantique conservé
+                    color: Colors.red.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
+                    border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     children: [
@@ -263,7 +279,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1565C0),
+                    // ✅ Couleur primaire adaptative
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -271,7 +288,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
-                    // ✅ Traduit
                     l10n.signIn,
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w600),
@@ -284,19 +300,25 @@ class _LoginScreenState extends State<LoginScreen> {
               // ── Séparateur OU ───────────────────────────────
               Row(
                 children: [
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                  Expanded(
+                      child: Divider(
+                        // ✅ Bordure adaptative
+                          color: AppColors.border(context))),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'OU',
                       style: TextStyle(
-                        color: Colors.grey.shade500,
+                        // ✅ Texte secondaire adaptatif
+                        color: AppColors.textSecondary(context),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                  Expanded(
+                      child: Divider(
+                          color: AppColors.border(context))),
                 ],
               ),
 
@@ -309,18 +331,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: OutlinedButton(
                   onPressed: _isGoogleLoading ? null : _loginWithGoogle,
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                    backgroundColor: Colors.white,
+                    // ✅ Bordure adaptative
+                    side: BorderSide(
+                        color: AppColors.border(context), width: 1.5),
+                    // ✅ Fond adaptatif (surface au lieu de Colors.white fixe)
+                    backgroundColor: AppColors.surface(context),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isGoogleLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Color(0xFF1565C0),
+                      // ✅ Couleur primaire adaptative
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   )
                       : Row(
@@ -329,12 +355,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       const _GoogleIcon(),
                       const SizedBox(width: 12),
                       Text(
-                        // ✅ Traduit — ajoute la clé dans les .arb si absente
                         'Continuer avec Google',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF3C4043),
+                          // ✅ Texte adaptatif (était Color(0xFF3C4043) fixe)
+                          color: AppColors.onSurface(context),
                         ),
                       ),
                     ],
@@ -351,7 +377,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       'Pas encore de compte ? ',
-                      style: TextStyle(color: Colors.grey.shade600),
+                      style: TextStyle(
+                        // ✅ Texte secondaire adaptatif
+                          color: AppColors.textSecondary(context)),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -363,10 +391,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                       child: Text(
-                        // ✅ Traduit
                         l10n.signUp,
-                        style: const TextStyle(
-                          color: Color(0xFF1565C0),
+                        style: TextStyle(
+                          // ✅ Couleur primaire adaptative
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -384,7 +412,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ── Classes _GoogleIcon et _GoogleIconPainter — inchangées ────
+// ── Widget icône Google ───────────────────────────────────────
 class _GoogleIcon extends StatelessWidget {
   const _GoogleIcon();
 
@@ -413,6 +441,7 @@ class _GoogleIcon extends StatelessWidget {
   }
 }
 
+// ── Painter icône Google — couleurs officielles, inchangées ───
 class _GoogleIconPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

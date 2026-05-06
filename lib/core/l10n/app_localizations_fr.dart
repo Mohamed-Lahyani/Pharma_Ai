@@ -588,4 +588,71 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privacyPolicy => 'Politique de confidentialité';
+
+  @override
+  String get notificationActive => 'Notif active';
+
+  @override
+  String get noRemindersDescription =>
+      'Ajoutez vos rappels pour ne jamais oublier de prendre vos médicaments.';
+
+  @override
+  String get reminderAdded => '✅ Rappel ajouté avec succès';
+
+  @override
+  String get reminderUpdated => '✅ Rappel mis à jour';
+
+  @override
+  String get reminderDeleted => 'Rappel supprimé';
+
+  @override
+  String get deleteReminderConfirm => 'Supprimer le rappel pour';
+
+  @override
+  String get newReminder => 'Nouveau rappel';
+
+  @override
+  String get editReminder => 'Modifier le rappel';
+
+  @override
+  String get modify => 'Modifier';
+
+  @override
+  String get errorOccurred => 'Une erreur est survenue.';
+
+  @override
+  String get dosageOptional => 'Dosage (optionnel)';
+
+  @override
+  String get notesOptional => 'Notes (optionnel)';
+
+  @override
+  String get frequencyDaily => 'Chaque jour';
+
+  @override
+  String get frequencyTwice => '2 fois par jour';
+
+  @override
+  String get frequencyThrice => '3 fois par jour';
+
+  @override
+  String get frequencyWeekly => 'Chaque semaine';
+
+  @override
+  String get frequencyAsNeeded => 'Si besoin';
+
+  @override
+  String get notifInfoDaily =>
+      '1 notification planifiée par jour à cette heure.';
+
+  @override
+  String get notifInfoTwice =>
+      '2 notifications : à cette heure et 8h plus tard.';
+
+  @override
+  String get notifInfoThrice => '3 notifications : à cette heure, +6h et +12h.';
+
+  @override
+  String get notifInfoWeekly =>
+      '1 notification planifiée par semaine à cette heure.';
 }

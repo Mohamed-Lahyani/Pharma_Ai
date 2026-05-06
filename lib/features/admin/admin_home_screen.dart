@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'medications_screen.dart';
-
-// ── AJOUT : traductions ───────────────────────────────────────
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
+import 'package:pharma_ai/core/theme/app_colors.dart';
+import 'package:pharma_ai/features/admin/ordonnances_admin_screen.dart';
+import 'package:pharma_ai/features/admin/users_screen.dart';
+import 'package:pharma_ai/features/admin/stock_alerts_screen.dart';
+
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -57,29 +60,31 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ── AJOUT : récupérer les traductions ─────────────────────
     final l10n = AppLocalizations.of(context)!;
 
+    // Couleurs sémantiques fixes (statut) — intentionnellement non adaptatives
+    const Color couleurPrimaire = Color(0xFF1565C0);
+    const Color couleurWarning  = Color(0xFFF9A825);
+    const Color couleurDanger   = Color(0xFFC62828);
+    const Color couleurSuccess  = Color(0xFF2E7D32);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
-        // ✅ Traduit
         title: Text(
           l10n.appName,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF1565C0),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            // ✅ Traduit
             tooltip: l10n.settings,
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            // ✅ Traduit
             tooltip: l10n.signOut,
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
@@ -99,19 +104,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              // ── Bannière de bienvenue ───────────────────
+              // ── Bannière de bienvenue ─────────────────
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1565C0),
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      // ✅ Traduit
                       l10n.helloPharmacie,
                       style: const TextStyle(
                         color: Colors.white,
@@ -121,7 +125,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      // ✅ Traduit
                       l10n.statistics,
                       style: const TextStyle(
                         color: Colors.white70,
@@ -135,11 +138,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               const SizedBox(height: 24),
 
               Text(
-                // ✅ Traduit
                 l10n.statistics,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: AppColors.onSurface(context),
                 ),
               ),
 
@@ -154,32 +157,37 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 childAspectRatio: 1.4,
                 children: [
                   _buildStatCard(
-                    // ✅ Traduit
-                    titre : l10n.medications,
-                    valeur: totalMedications.toString(),
-                    icone : Icons.medication,
-                    couleur: const Color(0xFF1565C0),
+                    titre  : l10n.medications,
+                    valeur : totalMedications.toString(),
+                    icone  : Icons.medication,
+                    couleur: couleurPrimaire,
+                  ),
+                  // ✅ Carte cliquable → OrdonnancesAdminScreen
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const OrdonnancesAdminScreen(),
+                      ),
+                    ),
+                    child: _buildStatCard(
+                      titre  : l10n.pending,
+                      valeur : pendingOrdonnances.toString(),
+                      icone  : Icons.pending_actions,
+                      couleur: couleurWarning,
+                    ),
                   ),
                   _buildStatCard(
-                    // ✅ Traduit
-                    titre : l10n.pending,
-                    valeur: pendingOrdonnances.toString(),
-                    icone : Icons.pending_actions,
-                    couleur: const Color(0xFFF9A825),
+                    titre  : l10n.criticalStock,
+                    valeur : lowStockMedications.toString(),
+                    icone  : Icons.warning_amber,
+                    couleur: couleurDanger,
                   ),
                   _buildStatCard(
-                    // ✅ Traduit
-                    titre : l10n.criticalStock,
-                    valeur: lowStockMedications.toString(),
-                    icone : Icons.warning_amber,
-                    couleur: const Color(0xFFC62828),
-                  ),
-                  _buildStatCard(
-                    // ✅ Traduit
-                    titre : l10n.clients,
-                    valeur: totalClients.toString(),
-                    icone : Icons.people,
-                    couleur: const Color(0xFF2E7D32),
+                    titre  : l10n.clients,
+                    valeur : totalClients.toString(),
+                    icone  : Icons.people,
+                    couleur: couleurSuccess,
                   ),
                 ],
               ),
@@ -187,45 +195,69 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               const SizedBox(height: 24),
 
               Text(
-                // ✅ Traduit
                 l10n.quickActions,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: AppColors.onSurface(context),
                 ),
               ),
 
               const SizedBox(height: 12),
 
+              // ── Gérer les médicaments ─────────────────
               _buildActionButton(
-                // ✅ Traduit
                 titre    : l10n.manageMedications,
                 sousTitre: l10n.addMedication,
                 icone    : Icons.medication_liquid,
-                couleur  : const Color(0xFF1565C0),
+                couleur  : couleurPrimaire,
                 onTap    : () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const MedicationsScreen()),
+                    builder: (_) => const MedicationsScreen(),
+                  ),
                 ),
               ),
+
               const SizedBox(height: 10),
+
+              // ✅ Voir les ordonnances → OrdonnancesAdminScreen
               _buildActionButton(
-                // ✅ Traduit
                 titre    : l10n.viewPrescriptions,
-                sousTitre: l10n.pending,
+                sousTitre: '$pendingOrdonnances ${l10n.pending}',
                 icone    : Icons.description,
-                couleur  : const Color(0xFFF9A825),
-                onTap    : () {},
+                couleur  : couleurWarning,
+                onTap    : () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const OrdonnancesAdminScreen(),
+                  ),
+                ),
               ),
+
               const SizedBox(height: 10),
+
+              // ── Alertes stock (à brancher plus tard) ──
               _buildActionButton(
-                // ✅ Traduit
                 titre    : l10n.stockAlerts,
-                sousTitre: l10n.criticalStock,
+                sousTitre: '$lowStockMedications ${l10n.criticalStock}',
                 icone    : Icons.inventory,
-                couleur  : const Color(0xFFC62828),
-                onTap    : () {},
+                couleur  : couleurDanger,
+                // TODO : brancher StockAlertsScreen
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StockAlertsScreen()),
+                ),
+              ),
+              _buildActionButton(
+                titre    : l10n.clients,
+                sousTitre: '$totalClients clients inscrits',
+                icone    : Icons.people,
+                couleur  : couleurSuccess,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const UsersScreen()),
+                ),
               ),
             ],
           ),
@@ -234,7 +266,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  // ── Carte statistique ─────────────────────────────────────────
+  // ── Carte statistique ──────────────────────────────────────
   Widget _buildStatCard({
     required String   titre,
     required String   valeur,
@@ -244,11 +276,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -261,7 +293,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: couleur.withOpacity(0.1),
+              color: couleur.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icone, color: couleur, size: 22),
@@ -279,7 +311,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
               Text(
                 titre,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
             ],
           ),
@@ -288,7 +323,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  // ── Bouton action rapide ──────────────────────────────────────
+  // ── Bouton action rapide ───────────────────────────────────
   Widget _buildActionButton({
     required String       titre,
     required String       sousTitre,
@@ -301,11 +336,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -316,7 +351,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: couleur.withOpacity(0.1),
+                color: couleur.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icone, color: couleur, size: 24),
@@ -328,20 +363,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 children: [
                   Text(
                     titre,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
+                      color: AppColors.onSurface(context),
                     ),
                   ),
                   Text(
                     sousTitre,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios,
-                size: 16, color: Colors.grey.shade400),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppColors.textSecondary(context),
+            ),
           ],
         ),
       ),

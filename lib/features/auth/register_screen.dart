@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-// ── AJOUT : traductions ───────────────────────────────────────
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
+import 'package:pharma_ai/core/theme/app_colors.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -63,11 +62,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       if (mounted) {
-        // ✅ Traduit
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.accountCreated),
+            // ✅ Couleur succès sémantique conservée
             backgroundColor: const Color(0xFF2E7D32),
             duration: const Duration(seconds: 3),
           ),
@@ -76,8 +75,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
-      // Les messages d'erreur Firebase restent en dur
-      // (pas de clés arb prévues pour eux)
       setState(() {
         switch (e.code) {
           case 'email-already-in-use':
@@ -102,11 +99,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ── AJOUT : récupérer les traductions ─────────────────────
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      // ✅ Fond adaptatif
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -125,7 +122,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1565C0),
+                          // ✅ Couleur primaire adaptative
+                          color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Icon(
@@ -136,20 +134,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        // ✅ Traduit
                         l10n.appName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1565C0),
+                          // ✅ Couleur primaire adaptative
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        // ✅ Traduit
                         l10n.createAccount,
-                        style: const TextStyle(
-                            fontSize: 14, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 14,
+                          // ✅ Texte secondaire adaptatif
+                          color: AppColors.textSecondary(context),
+                        ),
                       ),
                     ],
                   ),
@@ -162,9 +162,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
+                      // ✅ .withValues() remplace .withOpacity() — rouge sémantique conservé
+                      color: Colors.red.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
+                      border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       children: [
@@ -185,23 +187,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
 
                 // ── Nom complet ─────────────────────────────────
-                Text(
-                  // ✅ Traduit
-                  l10n.fullName,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                ),
+                _buildLabel(context, l10n.fullName),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _nameController,
                   textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    hintText: 'Ex : Ahmed Benali',
-                    prefixIcon: const Icon(Icons.person_outline),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.white,
+                  decoration: _inputDecoration(
+                    context,
+                    hint: 'Ex : Ahmed Benali',
+                    icon: Icons.person_outline,
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -217,23 +211,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
 
                 // ── Email ───────────────────────────────────────
-                Text(
-                  // ✅ Traduit
-                  l10n.email,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                ),
+                _buildLabel(context, l10n.email),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    hintText: 'exemple@email.com',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.white,
+                  decoration: _inputDecoration(
+                    context,
+                    hint: 'exemple@email.com',
+                    icon: Icons.email_outlined,
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -250,42 +236,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
 
                 // ── Téléphone ───────────────────────────────────
-                Text(
-                  // Pas de clé arb — on garde en dur
-                  'Téléphone (optionnel)',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                ),
+                _buildLabel(context, 'Téléphone (optionnel)'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    hintText: '0X XX XX XX XX',
-                    prefixIcon: const Icon(Icons.phone_outlined),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.white,
+                  decoration: _inputDecoration(
+                    context,
+                    hint: '0X XX XX XX XX',
+                    icon: Icons.phone_outlined,
                   ),
                 ),
 
                 const SizedBox(height: 20),
 
                 // ── Mot de passe ────────────────────────────────
-                Text(
-                  // ✅ Traduit
-                  l10n.password,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                ),
+                _buildLabel(context, l10n.password),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_showPassword,
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: const Icon(Icons.lock_outlined),
+                  decoration: _inputDecoration(
+                    context,
+                    hint: '••••••••',
+                    icon: Icons.lock_outlined,
                     suffixIcon: IconButton(
                       icon: Icon(_showPassword
                           ? Icons.visibility_off
@@ -293,10 +267,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onPressed: () =>
                           setState(() => _showPassword = !_showPassword),
                     ),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.white,
                   ),
                   validator: (val) {
                     if (val == null || val.isEmpty) {
@@ -312,19 +282,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
 
                 // ── Confirmer mot de passe ──────────────────────
-                Text(
-                  // ✅ Traduit
-                  l10n.newPassword,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                ),
+                _buildLabel(context, l10n.newPassword),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _confirmController,
                   obscureText: !_showConfirm,
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: const Icon(Icons.lock_outlined),
+                  decoration: _inputDecoration(
+                    context,
+                    hint: '••••••••',
+                    icon: Icons.lock_outlined,
                     suffixIcon: IconButton(
                       icon: Icon(_showConfirm
                           ? Icons.visibility_off
@@ -332,10 +298,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onPressed: () =>
                           setState(() => _showConfirm = !_showConfirm),
                     ),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.white,
                   ),
                   validator: (val) {
                     if (val == null || val.isEmpty) {
@@ -357,7 +319,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1565C0),
+                      // ✅ Couleur primaire adaptative
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -366,7 +329,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : Text(
-                      // ✅ Traduit
                       l10n.signUp,
                       style: const TextStyle(
                         fontSize: 16,
@@ -385,15 +347,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       Text(
                         'Vous avez déjà un compte ? ',
-                        style: TextStyle(color: Colors.grey.shade600),
+                        style: TextStyle(
+                          // ✅ Texte secondaire adaptatif
+                          color: AppColors.textSecondary(context),
+                        ),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: Text(
-                          // ✅ Traduit
                           l10n.signIn,
-                          style: const TextStyle(
-                            color: Color(0xFF1565C0),
+                          style: TextStyle(
+                            // ✅ Couleur primaire adaptative
+                            color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -408,6 +373,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // ── Helper : label de champ ───────────────────────────────────
+  Widget _buildLabel(BuildContext context, String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 14,
+        // ✅ Texte principal adaptatif
+        color: AppColors.onSurface(context),
+      ),
+    );
+  }
+
+  // ── Helper : décoration de champ ─────────────────────────────
+  InputDecoration _inputDecoration(
+      BuildContext context, {
+        required String hint,
+        required IconData icon,
+        Widget? suffixIcon,
+      }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: AppColors.textSecondary(context)),
+      prefixIcon: Icon(icon,
+          // ✅ Couleur primaire adaptative
+          color: Theme.of(context).colorScheme.primary),
+      suffixIcon: suffixIcon,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      filled: true,
+      // ✅ Fond input adaptatif
+      fillColor: AppColors.inputFill(context),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        // ✅ Bordure adaptative
+        borderSide: BorderSide(color: AppColors.border(context)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        // ✅ Rouge sémantique conservé
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      contentPadding:
+      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

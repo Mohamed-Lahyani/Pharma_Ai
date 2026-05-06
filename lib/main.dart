@@ -1,8 +1,14 @@
+// lib/main.dart
+// ═══════════════════════════════════════════════════════════════
+// Point d'entrée de PharmaAI
+// Initialise Firebase + les 3 services (notifications, sons, vibration)
+// ═══════════════════════════════════════════════════════════════
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── Localisation Flutter (généré par flutter gen-l10n) ────────
+// ── Localisation Flutter ───────────────────────────────────────
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
 
@@ -23,13 +29,24 @@ import 'core/theme/theme_provider.dart';
 // ── Langue ────────────────────────────────────────────────────
 import 'core/l10n/language_provider.dart';
 
-void main() async {
+// ── Services ──────────────────────────────────────────────────
+import 'core/services/notification_service.dart';
+import 'core/services/sound_service.dart';
+import 'core/services/vibration_service.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── 1. Initialiser Firebase ───────────────────────────────
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // ProviderScope est obligatoire pour que Riverpod fonctionne
+  // ── 2. Initialiser les services core ─────────────────────
+  await NotificationService().init();
+  await SoundService().init();
+  await VibrationService().init();
+
   runApp(
     const ProviderScope(
       child: MyApp(),
@@ -37,20 +54,13 @@ void main() async {
   );
 }
 
-// ConsumerWidget → accès aux providers Riverpod (thème + langue)
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ── Écouter le thème choisi par l'utilisateur ──────────────
     final themeMode = ref.watch(themeProvider);
-
-    // ── Écouter la langue choisie par l'utilisateur ────────────
-    // Quand l'utilisateur change la langue dans SettingsScreen,
-    // ce widget se reconstruit automatiquement → toute l'appli
-    // affiche la nouvelle langue instantanément
-    final locale = ref.watch(languageProvider);
+    final locale    = ref.watch(languageProvider);
 
     return MaterialApp(
       title                     : 'PharmaAI',
@@ -61,23 +71,13 @@ class MyApp extends ConsumerWidget {
       darkTheme : AppTheme.darkTheme,
       themeMode : themeMode,
 
-      // ── Langue active ────────────────────────────────────────
-      // locale vient du languageProvider (fr / en / ar)
-      locale: locale,
-
-      // ── Langues supportées ───────────────────────────────────
-      // Doit correspondre aux fichiers arb générés
+      // ── Langue ───────────────────────────────────────────────
+      locale          : locale,
       supportedLocales: const [
-        Locale('fr'), // Français
-        Locale('en'), // English
-        Locale('ar'), // العربية
+        Locale('fr'),
+        Locale('en'),
+        Locale('ar'),
       ],
-
-      // ── Délégués de localisation ─────────────────────────────
-      // AppLocalizations.delegate → nos traductions (app_fr/en/ar.arb)
-      // GlobalMaterialLocalizations → boutons, dates, etc. traduits
-      // GlobalWidgetsLocalizations  → direction du texte (RTL pour arabe)
-      // GlobalCupertinoLocalizations → composants iOS traduits
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

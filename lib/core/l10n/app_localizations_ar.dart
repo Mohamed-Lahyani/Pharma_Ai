@@ -581,4 +581,67 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get privacyPolicy => 'سياسة الخصوصية';
+
+  @override
+  String get notificationActive => 'الإشعار نشط';
+
+  @override
+  String get noRemindersDescription => 'أضف تذكيراتك حتى لا تنسى تناول أدويتك.';
+
+  @override
+  String get reminderAdded => '✅ تمت إضافة التذكير بنجاح';
+
+  @override
+  String get reminderUpdated => '✅ تم تحديث التذكير';
+
+  @override
+  String get reminderDeleted => 'تم حذف التذكير';
+
+  @override
+  String get deleteReminderConfirm => 'حذف التذكير لـ';
+
+  @override
+  String get newReminder => 'تذكير جديد';
+
+  @override
+  String get editReminder => 'تعديل التذكير';
+
+  @override
+  String get modify => 'تعديل';
+
+  @override
+  String get errorOccurred => 'حدث خطأ.';
+
+  @override
+  String get dosageOptional => 'الجرعة (اختياري)';
+
+  @override
+  String get notesOptional => 'ملاحظات (اختياري)';
+
+  @override
+  String get frequencyDaily => 'كل يوم';
+
+  @override
+  String get frequencyTwice => 'مرتين يومياً';
+
+  @override
+  String get frequencyThrice => 'ثلاث مرات يومياً';
+
+  @override
+  String get frequencyWeekly => 'كل أسبوع';
+
+  @override
+  String get frequencyAsNeeded => 'عند الحاجة';
+
+  @override
+  String get notifInfoDaily => 'إشعار واحد مجدول يومياً في هذا الوقت.';
+
+  @override
+  String get notifInfoTwice => 'إشعاران: في هذا الوقت وبعد 8 ساعات.';
+
+  @override
+  String get notifInfoThrice => '3 إشعارات: في هذا الوقت، +6 ساعات و+12 ساعة.';
+
+  @override
+  String get notifInfoWeekly => 'إشعار واحد مجدول أسبوعياً في هذا الوقت.';
 }

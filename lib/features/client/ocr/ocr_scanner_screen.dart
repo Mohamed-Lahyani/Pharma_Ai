@@ -6,6 +6,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:pharma_ai/core/theme/app_colors.dart';
 import 'dart:io';
 
 // ═══════════════════════════════════════════════════════════════
@@ -27,12 +28,10 @@ class OcrScannerScreen extends StatefulWidget {
 }
 
 class _OcrScannerScreenState extends State<OcrScannerScreen> {
-  // ── Couleurs ───────────────────────────────────────────────
-  static const Color primaryBlue = Color(0xFF1565C0);
-  static const Color green       = Color(0xFF2E7D32);
-  static const Color amber       = Color(0xFFF9A825);
-  static const Color red         = Color(0xFFC62828);
-  static const Color background  = Color(0xFFF5F7FA);
+  // ── Couleurs sémantiques (conservées fixes) ────────────────
+  static const Color green = Color(0xFF2E7D32);
+  static const Color amber = Color(0xFFF9A825);
+  static const Color red   = Color(0xFFC62828);
 
   // ── État de l'écran ────────────────────────────────────────
   // 'initial'    → page d'accueil (aucune image)
@@ -42,16 +41,15 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
   // 'done'       → envoi réussi
   String _etape = 'initial';
 
-  File?   _imageFile;          // Image sélectionnée
-  String  _texteExtrait  = ''; // Texte brut OCR
+  File?        _imageFile;       // Image sélectionnée
+  String       _texteExtrait  = ''; // Texte brut OCR
   List<String> _medsDetectes = []; // Médicaments détectés
-  String  _erreur = '';        // Message d'erreur éventuel
+  String       _erreur = '';     // Message d'erreur éventuel
 
   // ── Contrôleur du texte (éditable par l'utilisateur) ──────
   final TextEditingController _texteController = TextEditingController();
 
   // ── Mots-clés pour détecter les médicaments dans le texte ─
-  // Liste simple — peut être enrichie
   static const List<String> _motsClesMedicaments = [
     'mg', 'ml', 'cp', 'gel', 'comp', 'gél', 'sirop', 'injectable',
     'solution', 'pommade', 'crème', 'patch', 'suppositoire',
@@ -74,11 +72,11 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 85, // bonne qualité sans trop alourdir
+        imageQuality: 85,
         preferredCameraDevice: CameraDevice.rear,
       );
 
-      if (pickedFile == null) return; // annulé par l'utilisateur
+      if (pickedFile == null) return;
 
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -130,22 +128,17 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     if (_imageFile == null) return;
 
     try {
-      // Créer l'objet InputImage depuis le fichier
       final inputImage = InputImage.fromFile(_imageFile!);
 
-      // Initialiser le reconnaisseur de texte (Latin = Fr/En)
       final textRecognizer = TextRecognizer(
         script: TextRecognitionScript.latin,
       );
 
-      // Lancer la reconnaissance
       final RecognizedText recognized =
       await textRecognizer.processImage(inputImage);
 
-      // Fermer le reconnaisseur pour libérer la mémoire
       await textRecognizer.close();
 
-      // Récupérer le texte brut
       final texte = recognized.text.trim();
 
       if (texte.isEmpty) {
@@ -156,14 +149,13 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
         return;
       }
 
-      // Détecter les médicaments dans le texte
       final meds = _detecterMedicaments(texte);
 
       setState(() {
-        _texteExtrait  = texte;
-        _medsDetectes  = meds;
-        _etape         = 'result';
-        _texteController.text = texte; // afficher dans le champ éditable
+        _texteExtrait         = texte;
+        _medsDetectes         = meds;
+        _etape                = 'result';
+        _texteController.text = texte;
       });
     } catch (e) {
       setState(() {
@@ -175,7 +167,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
 
   // ════════════════════════════════════════════════════════════
   // Détecter les médicaments dans le texte extrait
-  // Logique simple : cherche les lignes contenant des mots-clés
   // ════════════════════════════════════════════════════════════
   List<String> _detecterMedicaments(String texte) {
     final lignes = texte.split('\n');
@@ -185,7 +176,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       final ligneLower = ligne.toLowerCase().trim();
       if (ligneLower.isEmpty) continue;
 
-      // Vérifier si la ligne contient un mot-clé médicament
       final contientMotCle = _motsClesMedicaments.any(
             (mot) => ligneLower.contains(mot.toLowerCase()),
       );
@@ -195,7 +185,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       }
     }
 
-    // Dédoublonner
     return meds.toSet().toList();
   }
 
@@ -220,23 +209,20 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('Utilisateur non connecté');
 
-      // Récupérer le nom du client depuis Firestore
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
       final userName = userDoc.data()?['name'] ?? 'Client';
 
-      // Ré-détecter les médicaments sur le texte édité
       final medsFinaux = _detecterMedicaments(texteEdite);
 
-      // Enregistrer dans Firestore
       await FirebaseFirestore.instance.collection('ordonnances').add({
         'userId'        : user.uid,
         'userName'      : userName,
         'extractedText' : texteEdite,
         'medicines'     : medsFinaux,
-        'status'        : 'pending',    // en attente de validation admin
+        'status'        : 'pending',
         'createdAt'     : FieldValue.serverTimestamp(),
         'validatedAt'   : null,
       });
@@ -245,7 +231,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     } catch (e) {
       setState(() {
         _erreur = 'Erreur envoi : $e';
-        _etape  = 'result'; // revenir à l'étape résultat
+        _etape  = 'result';
       });
     }
   }
@@ -270,13 +256,13 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
         title: const Text(
           'Scanner une ordonnance',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        backgroundColor: primaryBlue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
@@ -287,7 +273,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     );
   }
 
-  // Choisir le bon widget selon l'étape
   Widget _buildContenu() {
     switch (_etape) {
       case 'processing':
@@ -307,6 +292,8 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
   // ÉTAPE : initial — Choix de la source image
   // ════════════════════════════════════════════════════════════
   Widget _buildEtapeInitial() {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return SingleChildScrollView(
       key: const ValueKey('initial'),
       padding: const EdgeInsets.all(24),
@@ -319,11 +306,11 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: primaryBlue.withOpacity(0.07),
+                  color: primary.withValues(alpha: 0.07),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -331,27 +318,26 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
             ),
             child: Column(
               children: [
-                // Icône principale
                 Container(
                   width: 90,
                   height: 90,
                   decoration: BoxDecoration(
-                    color: primaryBlue.withOpacity(0.08),
+                    color: primary.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.document_scanner_outlined,
-                    color: primaryBlue,
+                    color: primary,
                     size: 44,
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Scanner votre ordonnance',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
+                    color: AppColors.onSurface(context),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -361,7 +347,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
                       'Le texte sera extrait automatiquement.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.grey[500],
+                    color: AppColors.textSecondary(context),
                     fontSize: 14,
                     height: 1.6,
                   ),
@@ -377,7 +363,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
             label: 'Prendre une photo',
             sousTitre: 'Utiliser l\'appareil photo',
             icone: Icons.camera_alt_outlined,
-            couleur: primaryBlue,
+            couleur: primary,
             onTap: _prendrePhoto,
           ),
 
@@ -398,9 +384,9 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: red.withOpacity(0.07),
+                color: red.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: red.withOpacity(0.3)),
+                border: Border.all(color: red.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -419,7 +405,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
 
           const SizedBox(height: 32),
 
-          // Conseils pour une bonne photo
           _buildConseils(),
         ],
       ),
@@ -430,12 +415,13 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
   // ÉTAPE : processing — OCR en cours
   // ════════════════════════════════════════════════════════════
   Widget _buildEtapeProcessing() {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Center(
       key: const ValueKey('processing'),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Aperçu de l'image
           if (_imageFile != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
@@ -447,20 +433,20 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
               ),
             ),
           const SizedBox(height: 32),
-          const CircularProgressIndicator(color: primaryBlue),
+          CircularProgressIndicator(color: primary),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Analyse en cours...',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: primaryBlue,
+              color: primary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'ML Kit extrait le texte de votre ordonnance',
-            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            style: TextStyle(color: AppColors.textSecondary(context), fontSize: 14),
           ),
         ],
       ),
@@ -471,6 +457,8 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
   // ÉTAPE : result — Texte extrait, vérification avant envoi
   // ════════════════════════════════════════════════════════════
   Widget _buildEtapeResult() {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return SingleChildScrollView(
       key: const ValueKey('result'),
       padding: const EdgeInsets.all(16),
@@ -521,7 +509,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
                     Text(
                       'Vérifiez et corrigez si nécessaire',
                       style: TextStyle(
-                          color: Colors.grey[500], fontSize: 12),
+                          color: AppColors.textSecondary(context), fontSize: 12),
                     ),
                   ],
                 ),
@@ -535,7 +523,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
           if (_medsDetectes.isNotEmpty) ...[
             _buildSectionTitre(
               '💊 Médicaments détectés (${_medsDetectes.length})',
-              couleur: primaryBlue,
+              couleur: primary,
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -549,24 +537,21 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
                       : med,
                   style: const TextStyle(fontSize: 12),
                 ),
-                backgroundColor:
-                primaryBlue.withOpacity(0.08),
-                side: BorderSide(
-                    color: primaryBlue.withOpacity(0.2)),
-                avatar: const Icon(Icons.medication,
-                    size: 14, color: primaryBlue),
+                backgroundColor: primary.withValues(alpha: 0.08),
+                side: BorderSide(color: primary.withValues(alpha: 0.2)),
+                avatar: Icon(Icons.medication,
+                    size: 14, color: primary),
               ))
                   .toList(),
             ),
             const SizedBox(height: 20),
           ] else ...[
-            // Pas de médicament détecté
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: amber.withOpacity(0.08),
+                color: amber.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: amber.withOpacity(0.3)),
+                border: Border.all(color: amber.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -577,7 +562,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
                       'Aucun médicament automatiquement détecté. '
                           'Vérifiez le texte ci-dessous.',
                       style: TextStyle(
-                          color: Colors.grey[700], fontSize: 12),
+                          color: AppColors.textSecondary(context), fontSize: 12),
                     ),
                   ),
                 ],
@@ -591,9 +576,9 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.inputFill(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: TextField(
               controller: _texteController,
@@ -607,7 +592,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
             ),
           ),
 
-          // Erreur éventuelle
           if (_erreur.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(_erreur,
@@ -630,7 +614,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
                     fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryBlue,
+                backgroundColor: primary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
@@ -644,13 +628,13 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
             width: double.infinity,
             height: 48,
             child: OutlinedButton.icon(
-              icon: const Icon(Icons.refresh, color: primaryBlue),
-              label: const Text(
+              icon: Icon(Icons.refresh, color: primary),
+              label: Text(
                 'Recommencer',
-                style: TextStyle(color: primaryBlue),
+                style: TextStyle(color: primary),
               ),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: primaryBlue),
+                side: BorderSide(color: primary),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
@@ -668,24 +652,26 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
   // ÉTAPE : sending — Envoi en cours
   // ════════════════════════════════════════════════════════════
   Widget _buildEtapeSending() {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Center(
       key: const ValueKey('sending'),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: primaryBlue),
+          CircularProgressIndicator(color: primary),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Envoi en cours...',
             style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: primaryBlue),
+                color: primary),
           ),
           const SizedBox(height: 8),
           Text(
             'Votre ordonnance est envoyée au pharmacien',
-            style: TextStyle(color: Colors.grey[500]),
+            style: TextStyle(color: AppColors.textSecondary(context)),
           ),
         ],
       ),
@@ -696,6 +682,8 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
   // ÉTAPE : done — Succès final
   // ════════════════════════════════════════════════════════════
   Widget _buildEtapeDone() {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Center(
       key: const ValueKey('done'),
       child: Padding(
@@ -703,12 +691,11 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icône succès animée (simple)
             Container(
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: green.withOpacity(0.1),
+                color: green.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -718,12 +705,12 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Ordonnance envoyée !',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A2E),
+                color: AppColors.onSurface(context),
               ),
             ),
             const SizedBox(height: 12),
@@ -732,13 +719,12 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
                   'Vous serez notifié dès qu\'elle est traitée.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.grey[500],
+                color: AppColors.textSecondary(context),
                 fontSize: 15,
                 height: 1.6,
               ),
             ),
             const SizedBox(height: 40),
-            // Bouton : Scanner une autre
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -750,7 +736,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
                   style: TextStyle(color: Colors.white, fontSize: 15),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
+                  backgroundColor: primary,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
@@ -758,19 +744,17 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            // Bouton : Retour accueil
             SizedBox(
               width: double.infinity,
               height: 48,
               child: OutlinedButton.icon(
-                icon:
-                const Icon(Icons.home_outlined, color: primaryBlue),
-                label: const Text(
+                icon: Icon(Icons.home_outlined, color: primary),
+                label: Text(
                   'Retour à l\'accueil',
-                  style: TextStyle(color: primaryBlue),
+                  style: TextStyle(color: primary),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: primaryBlue),
+                  side: BorderSide(color: primary),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
@@ -801,12 +785,12 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: couleur.withOpacity(0.2)),
+          border: Border.all(color: couleur.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: couleur.withOpacity(0.07),
+              color: couleur.withValues(alpha: 0.07),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -817,7 +801,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: couleur.withOpacity(0.1),
+                color: couleur.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icone, color: couleur, size: 26),
@@ -829,21 +813,22 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
+                      color: AppColors.onSurface(context),
                     ),
                   ),
                   Text(
                     sousTitre,
                     style: TextStyle(
-                        color: Colors.grey[500], fontSize: 12),
+                        color: AppColors.textSecondary(context), fontSize: 12),
                   ),
                 ],
               ),
             ),
             Icon(Icons.arrow_forward_ios,
-                size: 16, color: Colors.grey[300]),
+                size: 16, color: AppColors.border(context)),
           ],
         ),
       ),
@@ -851,13 +836,13 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
   }
 
   // Titre de section
-  Widget _buildSectionTitre(String titre, {Color couleur = const Color(0xFF1A1A2E)}) {
+  Widget _buildSectionTitre(String titre, {Color? couleur}) {
     return Text(
       titre,
       style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.bold,
-        color: couleur,
+        color: couleur ?? AppColors.onSurface(context),
       ),
     );
   }
@@ -875,19 +860,19 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: amber.withOpacity(0.06),
+        color: amber.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: amber.withOpacity(0.25)),
+        border: Border.all(color: amber.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Conseils pour un bon scan',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
-              color: Color(0xFF1A1A2E),
+              color: AppColors.onSurface(context),
             ),
           ),
           const SizedBox(height: 10),
@@ -896,7 +881,8 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
               padding: const EdgeInsets.only(bottom: 6),
               child: Text(
                 c,
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                style: TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary(context)),
               ),
             ),
           ),

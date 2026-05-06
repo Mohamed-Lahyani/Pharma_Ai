@@ -5,9 +5,9 @@ import 'package:pharma_ai/features/client/ocr/ocr_scanner_screen.dart';
 import 'package:pharma_ai/features/client/historique/historique_screen.dart';
 import 'package:pharma_ai/features/client/reminders/reminder_screen.dart';
 import 'package:pharma_ai/features/client/profile/profile_screen.dart';
-
-// ── AJOUT : traductions ───────────────────────────────────────
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
+import 'package:pharma_ai/core/theme/app_colors.dart';
+import 'package:pharma_ai/features/client/barcode/barcode_scanner_screen.dart';
 
 class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({super.key});
@@ -17,11 +17,12 @@ class ClientHomeScreen extends StatefulWidget {
 }
 
 class _ClientHomeScreenState extends State<ClientHomeScreen> {
-  static const Color primaryBlue = Color(0xFF1565C0);
-  static const Color green       = Color(0xFF2E7D32);
-  static const Color amber       = Color(0xFFF9A825);
-  static const Color red         = Color(0xFFC62828);
-  static const Color background  = Color(0xFFF5F7FA);
+  // ✅ Couleurs sémantiques conservées (statut métier — non adaptatives)
+  static const Color _couleurVert    = Color(0xFF2E7D32);
+  static const Color _couleurAmbre   = Color(0xFFF9A825);
+  static const Color _couleurRouge   = Color(0xFFC62828);
+  static const Color _couleurViolet  = Color(0xFF6A1B9A);
+  static const Color _couleurSarcelle= Color(0xFF00838F);
 
   String _userName  = 'Utilisateur';
   String _userEmail = '';
@@ -82,7 +83,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   }
 
   Future<void> _logout() async {
-    // ── On récupère l10n ici car showDialog a son propre context
     final l10n = AppLocalizations.of(context)!;
 
     final confirme = await showDialog<bool>(
@@ -90,19 +90,17 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16)),
-        // ✅ Traduit
         title: Text(l10n.signOut),
         content: const Text('Voulez-vous vraiment vous déconnecter ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            // ✅ Traduit
             child: Text(l10n.cancel),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: red),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: _couleurRouge),
             onPressed: () => Navigator.pop(ctx, true),
-            // ✅ Traduit
             child: Text(l10n.signOut,
                 style: const TextStyle(color: Colors.white)),
           ),
@@ -117,17 +115,22 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ── AJOUT : récupérer les traductions ─────────────────────
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: background,
+      // ✅ Fond adaptatif
+      backgroundColor: AppColors.background(context),
       body: _isLoading
-          ? const Center(
-          child: CircularProgressIndicator(color: primaryBlue))
+          ? Center(
+        child: CircularProgressIndicator(
+          // ✅ Couleur primaire adaptative
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      )
           : RefreshIndicator(
         onRefresh: _loadUserData,
-        color: primaryBlue,
+        // ✅ Couleur primaire adaptative
+        color: Theme.of(context).colorScheme.primary,
         child: CustomScrollView(
           slivers: [
             _buildSliverAppBar(l10n),
@@ -140,20 +143,21 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     _buildStatsRow(l10n),
                     const SizedBox(height: 28),
                     Text(
-                      // ✅ Traduit
                       l10n.myPrescriptions,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A2E),
+                        // ✅ Texte principal adaptatif
+                        color: AppColors.onSurface(context),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      // ✅ Traduit
                       l10n.scanPrescription,
                       style: TextStyle(
-                          fontSize: 13, color: Colors.grey[500]),
+                          fontSize: 13,
+                          // ✅ Texte secondaire adaptatif
+                          color: AppColors.textSecondary(context)),
                     ),
                     const SizedBox(height: 16),
                     _buildActionsGrid(l10n),
@@ -171,26 +175,29 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   }
 
   // ── AppBar avec dégradé ───────────────────────────────────────
+  // ✅ Le dégradé de la SliverAppBar est intentionnellement conservé
+  // en couleurs fixes : c'est un élément de branding (hero visuel),
+  // pas un fond de contenu. Il reste bleu en mode sombre.
   Widget _buildSliverAppBar(AppLocalizations l10n) {
     return SliverAppBar(
       expandedHeight: 160,
       floating: false,
       pinned: true,
-      backgroundColor: primaryBlue,
+      // ✅ Couleur pincée adaptative
+      backgroundColor: Theme.of(context).colorScheme.primary,
       automaticallyImplyLeading: false,
       actions: [
         IconButton(
           icon: const Icon(Icons.settings_outlined, color: Colors.white),
-          // ✅ Traduit
           tooltip: l10n.settings,
           onPressed: () => Navigator.pushNamed(context, '/settings'),
         ),
         IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+          icon: const Icon(Icons.notifications_outlined,
+              color: Colors.white),
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                // ✅ Traduit
                 content: Text(l10n.notifications),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -205,6 +212,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: const BoxDecoration(
+            // ✅ Dégradé branding conservé intentionnellement
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -229,10 +237,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          // ✅ .withValues() remplace .withOpacity()
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: Colors.white.withOpacity(0.4),
+                              color: Colors.white.withValues(alpha: 0.4),
                               width: 2),
                         ),
                         child: Center(
@@ -254,10 +263,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              // ✅ Traduit selon l'heure
                               _salutation(l10n),
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.85),
+                                // ✅ .withValues() remplace .withOpacity()
+                                color: Colors.white.withValues(alpha: 0.85),
                                 fontSize: 13,
                               ),
                             ),
@@ -277,10 +286,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          // ✅ .withValues() remplace .withOpacity()
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: Colors.white.withOpacity(0.3)),
+                              color: Colors.white.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -315,26 +325,24 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       children: [
         _buildStatMini(
           valeur : _ordonnancesEnAttente.toString(),
-          // ✅ Traduit
           label  : l10n.pending,
           icone  : Icons.hourglass_empty_rounded,
-          couleur: amber,
+          couleur: _couleurAmbre,
         ),
         const SizedBox(width: 10),
         _buildStatMini(
           valeur : _ordonnancesValidees.toString(),
-          // ✅ Traduit
           label  : l10n.validated,
           icone  : Icons.check_circle_outline,
-          couleur: green,
+          couleur: _couleurVert,
         ),
         const SizedBox(width: 10),
         _buildStatMini(
           valeur : _rappelsActifs.toString(),
-          // ✅ Traduit
           label  : l10n.reminders,
           icone  : Icons.alarm_on_outlined,
-          couleur: primaryBlue,
+          // ✅ Couleur primaire adaptative passée en paramètre
+          couleur: Theme.of(context).colorScheme.primary,
         ),
       ],
     );
@@ -350,11 +358,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          // ✅ Fond carte adaptatif
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: couleur.withOpacity(0.08),
+              // ✅ .withValues() remplace .withOpacity()
+              color: couleur.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -365,7 +375,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: couleur.withOpacity(0.1),
+                // ✅ .withValues() remplace .withOpacity()
+                color: couleur.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icone, color: couleur, size: 18),
@@ -382,7 +393,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              style: TextStyle(
+                  fontSize: 11,
+                  // ✅ Texte secondaire adaptatif
+                  color: AppColors.textSecondary(context)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -395,29 +409,27 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   Widget _buildActionsGrid(AppLocalizations l10n) {
     final actions = [
       _ActionItem(
-        // ✅ Traduit
         titre      : l10n.scanPrescription,
         icone      : Icons.document_scanner_outlined,
-        couleur    : primaryBlue,
-        // ✅ Traduit
+        // ✅ Couleur primaire adaptative
+        couleur    : Theme.of(context).colorScheme.primary,
         description: l10n.takePhoto,
         onTap      : () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const OcrScannerScreen())),
       ),
       _ActionItem(
-        // ✅ Traduit
         titre      : l10n.scanBarcode,
         icone      : Icons.qr_code_scanner,
-        couleur    : const Color(0xFF6A1B9A),
+        couleur    : _couleurViolet,
         description: l10n.scanBarcode,
-        onTap      : () => _showComingSoon(l10n.scanBarcode),
+        onTap   : () => Navigator.push(context,
+            MaterialPageRoute(
+                builder: (_) => const BarcodeScannerScreen())),
       ),
       _ActionItem(
-        // ✅ Traduit
         titre      : l10n.myPrescriptions,
         icone      : Icons.description_outlined,
-        couleur    : green,
-        // ✅ Traduit
+        couleur    : _couleurVert,
         description: l10n.all,
         badge      : _ordonnancesEnAttente > 0
             ? _ordonnancesEnAttente.toString()
@@ -426,30 +438,25 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             MaterialPageRoute(builder: (_) => const HistoriqueScreen())),
       ),
       _ActionItem(
-        // ✅ Traduit
         titre      : l10n.myReminders,
         icone      : Icons.alarm_outlined,
-        couleur    : amber,
-        // ✅ Traduit
+        couleur    : _couleurAmbre,
         description: l10n.reminders,
         badge      : _rappelsActifs > 0 ? _rappelsActifs.toString() : null,
         onTap      : () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const ReminderScreen())),
       ),
       _ActionItem(
-        // ✅ Traduit
         titre      : l10n.medications,
         icone      : Icons.medication_outlined,
-        couleur    : const Color(0xFF00838F),
+        couleur    : _couleurSarcelle,
         description: l10n.searchMedication,
         onTap      : () => _showComingSoon(l10n.medications),
       ),
       _ActionItem(
-        // ✅ Traduit
         titre      : l10n.myProfile,
         icone      : Icons.person_outline,
-        couleur    : red,
-        // ✅ Traduit
+        couleur    : _couleurRouge,
         description: l10n.personalInfo,
         onTap      : () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const ProfileScreen())),
@@ -460,10 +467,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount   : 2,
-        crossAxisSpacing : 12,
-        mainAxisSpacing  : 12,
-        childAspectRatio : 1.15,
+        crossAxisCount  : 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing : 12,
+        childAspectRatio: 1.15,
       ),
       itemCount  : actions.length,
       itemBuilder: (context, index) => _buildActionCard(actions[index]),
@@ -476,11 +483,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          // ✅ Fond carte adaptatif
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color : action.couleur.withOpacity(0.10),
+              // ✅ .withValues() remplace .withOpacity()
+              color : action.couleur.withValues(alpha: 0.10),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -495,25 +504,31 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: action.couleur.withOpacity(0.12),
+                    // ✅ .withValues() remplace .withOpacity()
+                    color: action.couleur.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(action.icone, color: action.couleur, size: 24),
+                  child: Icon(action.icone,
+                      color: action.couleur, size: 24),
                 ),
                 const Spacer(),
                 Text(
                   action.titre,
-                  style: const TextStyle(
-                    fontSize    : 14,
-                    fontWeight  : FontWeight.bold,
-                    color       : Color(0xFF1A1A2E),
-                    height      : 1.3,
+                  style: TextStyle(
+                    fontSize  : 14,
+                    fontWeight: FontWeight.bold,
+                    // ✅ Texte principal adaptatif
+                    color     : AppColors.onSurface(context),
+                    height    : 1.3,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   action.description,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                  style: TextStyle(
+                      fontSize: 11,
+                      // ✅ Texte secondaire adaptatif
+                      color: AppColors.textSecondary(context)),
                 ),
               ],
             ),
@@ -524,7 +539,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
-                    color: red,
+                    // ✅ Rouge sémantique conservé (badge d'alerte)
+                    color: _couleurRouge,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -551,22 +567,26 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            green.withOpacity(0.08),
-            primaryBlue.withOpacity(0.06),
+            // ✅ .withValues() remplace .withOpacity()
+            _couleurVert.withValues(alpha: 0.08),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: green.withOpacity(0.2)),
+        border: Border.all(
+            color: _couleurVert.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: green.withOpacity(0.1),
+              // ✅ .withValues() remplace .withOpacity()
+              color: _couleurVert.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.info_outline, color: green, size: 22),
+            child: const Icon(Icons.info_outline,
+                color: _couleurVert, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -574,21 +594,21 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  // ✅ Traduit
                   l10n.howItWorks,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize  : 14,
-                    color     : Color(0xFF1A1A2E),
+                    // ✅ Texte principal adaptatif
+                    color     : AppColors.onSurface(context),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  // ✅ Traduit
                   l10n.scanPrescription,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color   : Colors.grey,
+                    // ✅ Texte secondaire adaptatif
+                    color   : AppColors.textSecondary(context),
                     height  : 1.5,
                   ),
                 ),
@@ -618,7 +638,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             Text('$feature — bientôt disponible'),
           ],
         ),
-        backgroundColor: primaryBlue,
+        // ✅ Couleur primaire adaptative
+        backgroundColor: Theme.of(context).colorScheme.primary,
         behavior       : SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10)),
@@ -628,6 +649,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   }
 }
 
+// ── Modèle de donnée pour une action de la grille ─────────────
 class _ActionItem {
   final String       titre;
   final IconData     icone;

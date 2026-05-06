@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:pharma_ai/core/theme/app_colors.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // HistoriqueScreen — Historique des ordonnances du client
@@ -16,12 +17,10 @@ class HistoriqueScreen extends StatefulWidget {
 }
 
 class _HistoriqueScreenState extends State<HistoriqueScreen> {
-  // ── Couleurs ───────────────────────────────────────────────
-  static const Color primaryBlue = Color(0xFF1565C0);
-  static const Color green       = Color(0xFF2E7D32);
-  static const Color amber       = Color(0xFFF9A825);
-  static const Color red         = Color(0xFFC62828);
-  static const Color background  = Color(0xFFF5F7FA);
+  // ✅ Couleurs sémantiques conservées (statut métier — non adaptatives)
+  static const Color _couleurVert  = Color(0xFF2E7D32);
+  static const Color _couleurAmbre = Color(0xFFF9A825);
+  static const Color _couleurRouge = Color(0xFFC62828);
 
   // Filtre actuel
   String _filtre = 'tous';
@@ -32,21 +31,21 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
+      // ✅ Fond adaptatif
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
         title: const Text(
           'Mes Ordonnances',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        backgroundColor: primaryBlue,
+        // ✅ AppBar adaptative
+        backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: Column(
         children: [
-          // ── Barre de filtres ─────────────────────────────
           _buildFiltreBar(),
-          // ── Liste des ordonnances ────────────────────────
           Expanded(child: _buildListe()),
         ],
       ),
@@ -58,14 +57,20 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
   // ════════════════════════════════════════════════════════════
   Widget _buildFiltreBar() {
     final filtres = [
-      {'label': 'Toutes',     'valeur': 'tous',      'couleur': primaryBlue},
-      {'label': 'En attente', 'valeur': 'pending',   'couleur': amber},
-      {'label': 'Validées',   'valeur': 'validated', 'couleur': green},
-      {'label': 'Rejetées',   'valeur': 'rejected',  'couleur': red},
+      {
+        'label'  : 'Toutes',
+        'valeur' : 'tous',
+        // ✅ Couleur primaire récupérée depuis le contexte
+        'couleur': Theme.of(context).colorScheme.primary,
+      },
+      {'label': 'En attente', 'valeur': 'pending',   'couleur': _couleurAmbre},
+      {'label': 'Validées',   'valeur': 'validated', 'couleur': _couleurVert},
+      {'label': 'Rejetées',   'valeur': 'rejected',  'couleur': _couleurRouge},
     ];
 
     return Container(
-      color: Colors.white,
+      // ✅ Fond barre de filtres adaptatif
+      color: AppColors.surface(context),
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -79,7 +84,10 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                 selected: estActif,
                 selectedColor: f['couleur'] as Color,
                 labelStyle: TextStyle(
-                  color: estActif ? Colors.white : Colors.grey[700],
+                  color: estActif
+                      ? Colors.white
+                  // ✅ Texte chip non sélectionné adaptatif
+                      : AppColors.textSecondary(context),
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),
@@ -97,10 +105,9 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
   // Liste temps réel depuis Firestore
   // ════════════════════════════════════════════════════════════
   Widget _buildListe() {
-    // Construire la requête selon le filtre
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance
         .collection('ordonnances')
-        .where('userId', isEqualTo: _uid) // seulement CE client
+        .where('userId', isEqualTo: _uid)
         .orderBy('createdAt', descending: true);
 
     if (_filtre != 'tous') {
@@ -110,35 +117,36 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: query.snapshots(),
       builder: (context, snapshot) {
-        // Chargement
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-              child: CircularProgressIndicator(color: primaryBlue));
+          return Center(
+            child: CircularProgressIndicator(
+              // ✅ Couleur primaire adaptative
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          );
         }
 
-        // Erreur
         if (snapshot.hasError) {
           return _buildEtatVide(
-            icone: Icons.error_outline,
-            message: 'Une erreur est survenue.',
-            couleur: red,
+            icone   : Icons.error_outline,
+            message : 'Une erreur est survenue.',
+            couleur : _couleurRouge,
           );
         }
 
         final docs = snapshot.data?.docs ?? [];
 
-        // Liste vide
         if (docs.isEmpty) {
           return _buildEtatVide(
-            icone: Icons.description_outlined,
+            icone  : Icons.description_outlined,
             message: _filtre == 'tous'
                 ? 'Vous n\'avez pas encore soumis d\'ordonnance.'
                 : 'Aucune ordonnance "${_labelFiltre()}".',
-            couleur: Colors.grey,
+            // ✅ Couleur adaptative pour l'état vide
+            couleur: AppColors.textSecondary(context),
           );
         }
 
-        // Liste des cartes
         return ListView.builder(
           padding: const EdgeInsets.all(14),
           itemCount: docs.length,
@@ -160,7 +168,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     final texte     = data['extractedText'] ?? 'Aucun texte';
     final medicines = data['medicines'] as List<dynamic>? ?? [];
 
-    // Dates
     final createdAt = data['createdAt'] != null
         ? (data['createdAt'] as Timestamp).toDate()
         : null;
@@ -176,19 +183,22 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
         '${createdAt.minute.toString().padLeft(2, '0')}'
         : '—';
 
+    final couleurStatut = _couleurStatut(statut);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
+      // ✅ Fond carte adaptatif
+      color: AppColors.surface(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        // Bordure colorée selon le statut
         side: BorderSide(
-          color: _couleurStatut(statut).withOpacity(0.3),
+          // ✅ .withValues() remplace .withOpacity()
+          color: couleurStatut.withValues(alpha: 0.3),
           width: 1.2,
         ),
       ),
       elevation: 2,
       child: Theme(
-        // ExpansionTile sans ligne de séparation
         data: Theme.of(context).copyWith(
           dividerColor: Colors.transparent,
         ),
@@ -198,12 +208,13 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: _couleurStatut(statut).withOpacity(0.1),
+              // ✅ .withValues() remplace .withOpacity()
+              color: couleurStatut.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               _iconeStatut(statut),
-              color: _couleurStatut(statut),
+              color: couleurStatut,
               size: 22,
             ),
           ),
@@ -212,9 +223,11 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
               Expanded(
                 child: Text(
                   'Ordonnance du $dateCreation',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
+                    // ✅ Texte principal adaptatif
+                    color: AppColors.onSurface(context),
                   ),
                 ),
               ),
@@ -231,11 +244,14 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Divider(),
+                  Divider(
+                    // ✅ Séparateur adaptatif
+                    color: AppColors.border(context),
+                  ),
 
                   // Médicaments détectés
                   if (medicines.isNotEmpty) ...[
-                    _sousTitre('💊 Médicaments détectés'),
+                    _sousTitre(context, '💊 Médicaments détectés'),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 6,
@@ -248,10 +264,17 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                               : m.toString(),
                           style: const TextStyle(fontSize: 11),
                         ),
-                        backgroundColor:
-                        primaryBlue.withOpacity(0.07),
+                        // ✅ .withValues() remplace .withOpacity()
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.07),
                         side: BorderSide(
-                            color: primaryBlue.withOpacity(0.2)),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.2),
+                        ),
                         visualDensity: VisualDensity.compact,
                       ))
                           .toList(),
@@ -260,23 +283,28 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                   ],
 
                   // Texte extrait
-                  _sousTitre('📄 Texte extrait'),
+                  _sousTitre(context, '📄 Texte extrait'),
                   const SizedBox(height: 6),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: background,
+                      // ✅ Fond zone texte adaptatif
+                      color: AppColors.inputFill(context),
                       borderRadius: BorderRadius.circular(10),
-                      border:
-                      Border.all(color: Colors.grey.shade200),
+                      border: Border.all(
+                          color: AppColors.border(context)),
                     ),
                     child: Text(
                       texte,
                       maxLines: 6,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 12, height: 1.6),
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.6,
+                        // ✅ Texte adaptatif
+                        color: AppColors.onSurface(context),
+                      ),
                     ),
                   ),
 
@@ -286,8 +314,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                     Row(
                       children: [
                         Icon(Icons.check_circle,
-                            size: 14,
-                            color: _couleurStatut(statut)),
+                            size: 14, color: couleurStatut),
                         const SizedBox(width: 6),
                         Text(
                           'Traitée le : '
@@ -296,7 +323,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                               '${validatedAt.year}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: _couleurStatut(statut),
+                            color: couleurStatut,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -304,7 +331,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                     ),
                   ],
 
-                  // Message selon statut
                   const SizedBox(height: 12),
                   _buildMessageStatut(statut),
                 ],
@@ -320,35 +346,36 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
   // Message d'information selon le statut
   // ════════════════════════════════════════════════════════════
   Widget _buildMessageStatut(String statut) {
-    String message;
-    Color couleur;
+    String   message;
+    Color    couleur;
     IconData icone;
 
     switch (statut) {
       case 'validated':
         message = 'Votre ordonnance a été validée. '
             'Vous pouvez récupérer vos médicaments.';
-        couleur = green;
+        couleur = _couleurVert;
         icone   = Icons.check_circle_outline;
         break;
       case 'rejected':
         message = 'Votre ordonnance a été rejetée. '
             'Contactez votre pharmacien pour plus d\'informations.';
-        couleur = red;
+        couleur = _couleurRouge;
         icone   = Icons.cancel_outlined;
         break;
       default:
         message = 'En attente de validation par le pharmacien.';
-        couleur = amber;
+        couleur = _couleurAmbre;
         icone   = Icons.hourglass_empty;
     }
 
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: couleur.withOpacity(0.07),
+        // ✅ .withValues() remplace .withOpacity()
+        color: couleur.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: couleur.withOpacity(0.25)),
+        border: Border.all(color: couleur.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -374,19 +401,24 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
   // ════════════════════════════════════════════════════════════
   Widget _buildEtatVide({
     required IconData icone,
-    required String message,
-    required Color couleur,
+    required String   message,
+    required Color    couleur,
   }) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icone, size: 72, color: couleur.withOpacity(0.3)),
+          Icon(icone, size: 72,
+              // ✅ .withValues() remplace .withOpacity()
+              color: couleur.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[500], fontSize: 15),
+            style: TextStyle(
+              // ✅ Texte adaptatif
+                color: AppColors.textSecondary(context),
+                fontSize: 15),
           ),
         ],
       ),
@@ -403,9 +435,10 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: couleur.withOpacity(0.1),
+        // ✅ .withValues() remplace .withOpacity()
+        color: couleur.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: couleur.withOpacity(0.3)),
+        border: Border.all(color: couleur.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -427,9 +460,9 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
 
   Color _couleurStatut(String statut) {
     switch (statut) {
-      case 'validated': return green;
-      case 'rejected':  return red;
-      default:          return amber;
+      case 'validated': return _couleurVert;
+      case 'rejected':  return _couleurRouge;
+      default:          return _couleurAmbre;
     }
   }
 
@@ -457,13 +490,15 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     }
   }
 
-  Widget _sousTitre(String texte) {
+  // ✅ context ajouté en paramètre pour accéder au thème
+  Widget _sousTitre(BuildContext context, String texte) {
     return Text(
       texte,
-      style: const TextStyle(
+      style: TextStyle(
         fontWeight: FontWeight.bold,
         fontSize: 13,
-        color: Color(0xFF37474F),
+        // ✅ Couleur texte adaptatif (était Color(0xFF37474F) fixe)
+        color: AppColors.onSurface(context),
       ),
     );
   }

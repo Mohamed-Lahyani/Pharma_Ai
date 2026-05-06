@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// ── AJOUT : traductions ───────────────────────────────────────
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
+import 'package:pharma_ai/core/theme/app_colors.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -14,10 +13,9 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  static const Color primaryColor   = Color(0xFF1565C0);
+  // ── Couleurs sémantiques (conservées fixes) ────────────────
   static const Color secondaryColor = Color(0xFF2E7D32);
   static const Color dangerColor    = Color(0xFFC62828);
-  static const Color bgColor        = Color(0xFFF5F7FA);
 
   final FirebaseAuth      _auth      = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -99,7 +97,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _isSaving   = false;
         _isEditMode = false;
       });
-      // ✅ Traduit
       final l10n = AppLocalizations.of(context)!;
       _showSnackBar(l10n.profileUpdated);
     } catch (e) {
@@ -109,8 +106,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _showChangePasswordDialog() async {
-    // ✅ On récupère l10n avant le showDialog
-    final l10n = AppLocalizations.of(context)!;
+    final l10n           = AppLocalizations.of(context)!;
+    final primary        = Theme.of(context).colorScheme.primary;
 
     final currentPwdCtrl = TextEditingController();
     final newPwdCtrl     = TextEditingController();
@@ -127,10 +124,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
-              const Icon(Icons.lock_outline, color: primaryColor),
+              Icon(Icons.lock_outline, color: primary),
               const SizedBox(width: 8),
               Text(
-                // ✅ Traduit
                 l10n.changePassword,
                 style: const TextStyle(
                     fontSize: 16, fontWeight: FontWeight.bold),
@@ -144,7 +140,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 controller : currentPwdCtrl,
                 obscureText: hideCurrentPwd,
                 decoration : InputDecoration(
-                  // ✅ Traduit
                   labelText : l10n.currentPassword,
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
@@ -163,7 +158,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 controller : newPwdCtrl,
                 obscureText: hideNewPwd,
                 decoration : InputDecoration(
-                  // ✅ Traduit
                   labelText : l10n.newPassword,
                   prefixIcon: const Icon(Icons.lock_reset),
                   suffixIcon: IconButton(
@@ -182,7 +176,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 controller : confirmPwdCtrl,
                 obscureText: hideConfirmPwd,
                 decoration : InputDecoration(
-                  // ✅ Traduit
                   labelText : l10n.confirm,
                   prefixIcon: const Icon(Icons.lock_reset),
                   suffixIcon: IconButton(
@@ -201,12 +194,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              // ✅ Traduit
               child: Text(l10n.cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
+                backgroundColor: primary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
               ),
@@ -249,7 +241,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   );
                 }
               },
-              // ✅ Traduit
               child: Text(l10n.confirm,
                   style: const TextStyle(color: Colors.white)),
             ),
@@ -267,13 +258,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16)),
-        // ✅ Traduit
         title  : Text(l10n.signOut),
         content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            // ✅ Traduit
             child: Text(l10n.cancel),
           ),
           ElevatedButton(
@@ -283,7 +272,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            // ✅ Traduit
             child: Text(l10n.signOut,
                 style: const TextStyle(color: Colors.white)),
           ),
@@ -324,24 +312,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ── AJOUT : récupérer les traductions ─────────────────────
-    final l10n = AppLocalizations.of(context)!;
+    final l10n    = AppLocalizations.of(context)!;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
-        // ✅ Traduit
         title: Text(l10n.myProfile,
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryColor,
+        backgroundColor: primary,
         iconTheme      : const IconThemeData(color: Colors.white),
         elevation      : 0,
         actions: [
           if (!_isLoading)
             IconButton(
               icon: Icon(_isEditMode ? Icons.close : Icons.edit),
-              // ✅ Traduit
               tooltip: _isEditMode ? l10n.cancel : l10n.edit,
               onPressed: () {
                 if (_isEditMode) _loadUserData();
@@ -352,8 +338,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
 
       body: _isLoading
-          ? const Center(
-          child: CircularProgressIndicator(color: primaryColor))
+          ? Center(
+          child: CircularProgressIndicator(color: primary))
           : SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -365,15 +351,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               _buildAvatar(l10n),
               const SizedBox(height: 24),
 
-              // ── Informations personnelles ──────────────
+              // ── Informations personnelles ──────────
               _buildSectionCard(
-                // ✅ Traduit
                 title   : l10n.personalInfo,
                 icon    : Icons.person_outline,
                 children: [
                   _buildTextField(
                     controller: _nameController,
-                    // ✅ Traduit
                     label     : l10n.fullName,
                     icon      : Icons.badge_outlined,
                     enabled   : _isEditMode,
@@ -385,7 +369,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   const SizedBox(height: 12),
                   _buildTextField(
                     controller  : _emailController,
-                    // ✅ Traduit
                     label       : l10n.email,
                     icon        : Icons.email_outlined,
                     enabled     : false,
@@ -403,7 +386,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Informations du compte ─────────────────
+              // ── Informations du compte ─────────────
               _buildSectionCard(
                 title   : 'Informations du compte',
                 icon    : Icons.info_outline,
@@ -417,7 +400,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ? Icons.admin_panel_settings
                         : Icons.person,
                     color: _userRole == 'admin'
-                        ? primaryColor
+                        ? primary
                         : secondaryColor,
                   ),
                   if (_createdAt.isNotEmpty) ...[
@@ -426,14 +409,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       label: 'Membre depuis',
                       value: _createdAt,
                       icon : Icons.calendar_today_outlined,
-                      color: Colors.grey[600]!,
+                      color: AppColors.textSecondary(context),
                     ),
                   ],
                 ],
               ),
               const SizedBox(height: 16),
 
-              // ── Bouton Sauvegarder ─────────────────────
+              // ── Bouton Sauvegarder ─────────────────
               if (_isEditMode) ...[
                 SizedBox(
                   width : double.infinity,
@@ -454,7 +437,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             strokeWidth: 2))
                         : const Icon(Icons.save, color: Colors.white),
                     label: Text(
-                      // ✅ Traduit
                       _isSaving ? l10n.loading : l10n.saveChanges,
                       style: const TextStyle(
                           color     : Colors.white,
@@ -465,7 +447,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // ── Sécurité ───────────────────────────────
+              // ── Sécurité ───────────────────────────
               _buildSectionCard(
                 title   : 'Sécurité',
                 icon    : Icons.security,
@@ -475,13 +457,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(0.1),
+                        color: primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.lock_outline,
-                          color: primaryColor, size: 20),
+                      child: Icon(Icons.lock_outline,
+                          color: primary, size: 20),
                     ),
-                    // ✅ Traduit
                     title   : Text(l10n.changePassword,
                         style: const TextStyle(
                             fontWeight: FontWeight.w500)),
@@ -494,7 +475,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Déconnexion ────────────────────────────
+              // ── Déconnexion ────────────────────────
               SizedBox(
                 width : double.infinity,
                 height: 50,
@@ -507,7 +488,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   onPressed: _confirmSignOut,
                   icon : const Icon(Icons.logout),
-                  // ✅ Traduit
                   label: Text(l10n.signOut,
                       style: const TextStyle(
                           fontWeight: FontWeight.bold)),
@@ -515,10 +495,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 32),
 
-              // ── Version ────────────────────────────────
+              // ── Version ────────────────────────────
               Text('${l10n.appName} v1.0.0',
                   style: TextStyle(
-                      color: Colors.grey[400], fontSize: 12)),
+                      color: AppColors.textSecondary(context),
+                      fontSize: 12)),
               const SizedBox(height: 8),
             ],
           ),
@@ -528,7 +509,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   // ── Avatar ────────────────────────────────────────────────────
+  // Conservé : dégradé branding (primaryColor → 0xFF1976D2)
   Widget _buildAvatar(AppLocalizations l10n) {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Column(
       children: [
         Container(
@@ -536,14 +520,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           height: 90,
           decoration: BoxDecoration(
             shape   : BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [primaryColor, Color(0xFF1976D2)],
+            gradient: LinearGradient(
+              colors: [primary, const Color(0xFF1976D2)],
               begin : Alignment.topLeft,
               end   : Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color     : primaryColor.withOpacity(0.35),
+                color     : primary.withValues(alpha: 0.35),
                 blurRadius: 12,
                 offset    : const Offset(0, 4),
               ),
@@ -562,20 +546,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const SizedBox(height: 10),
         Text(
           _nameController.text.isEmpty ? 'Utilisateur' : _nameController.text,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontSize      : 18,
+              fontWeight    : FontWeight.bold,
+              color         : AppColors.onSurface(context)),
         ),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
           decoration: BoxDecoration(
-            color: (_userRole == 'admin' ? primaryColor : secondaryColor)
-                .withOpacity(0.1),
+            color: (_userRole == 'admin' ? primary : secondaryColor)
+                .withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             _userRole == 'admin' ? 'Administrateur' : l10n.clients,
             style: TextStyle(
-              color     : _userRole == 'admin' ? primaryColor : secondaryColor,
+              color     : _userRole == 'admin' ? primary : secondaryColor,
               fontSize  : 12,
               fontWeight: FontWeight.w600,
             ),
@@ -590,15 +577,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     required IconData     icon,
     required List<Widget> children,
   }) {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Container(
       width  : double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color       : Colors.white,
+        color       : AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow   : [
           BoxShadow(
-            color     : Colors.black.withOpacity(0.05),
+            color     : Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset    : const Offset(0, 2),
           ),
@@ -609,14 +598,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, color: primaryColor, size: 20),
+              Icon(icon, color: primary, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize  : 15,
                   fontWeight: FontWeight.bold,
-                  color     : Color(0xFF1565C0),
+                  color     : primary,
                 ),
               ),
             ],
@@ -636,6 +625,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     TextInputType?                 keyboardType,
     String? Function(String?)?     validator,
   }) {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return TextFormField(
       controller  : controller,
       enabled     : enabled,
@@ -644,25 +635,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       decoration  : InputDecoration(
         labelText : label,
         prefixIcon: Icon(icon,
-            color: enabled ? primaryColor : Colors.grey),
+            color: enabled ? primary : AppColors.textSecondary(context)),
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide  : const BorderSide(color: Color(0xFFBBDEFB)),
+          borderSide  : BorderSide(color: primary.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide  : const BorderSide(color: primaryColor, width: 2),
+          borderSide  : BorderSide(color: primary, width: 2),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide  : const BorderSide(color: Color(0xFFEEEEEE)),
+          borderSide  : BorderSide(color: AppColors.border(context)),
         ),
         filled    : !enabled,
-        fillColor : enabled ? null : Colors.grey[50],
+        fillColor : enabled ? null : AppColors.inputFill(context),
         labelStyle: TextStyle(
-            color: enabled ? Colors.grey[700] : Colors.grey[400]),
+            color: enabled
+                ? AppColors.textSecondary(context)
+                : AppColors.textSecondary(context).withValues(alpha: 0.6)),
       ),
     );
   }
@@ -678,7 +671,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color       : color.withOpacity(0.1),
+            color       : color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: color, size: 18),
@@ -688,10 +681,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary(context))),
             Text(value,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600)),
+                style: TextStyle(
+                    fontSize  : 14,
+                    fontWeight: FontWeight.w600,
+                    color     : AppColors.onSurface(context))),
           ],
         ),
       ],
