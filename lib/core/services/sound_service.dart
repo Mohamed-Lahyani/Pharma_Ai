@@ -48,6 +48,7 @@ class SoundService {
     // Configurer le player en mode bas volume par défaut
     await _player.setVolume(1.0);
     await _player.setReleaseMode(ReleaseMode.stop);
+    await _player.setSource(AssetSource(_scanSound));
 
     debugPrint('[SoundService] Initialisé. Sons activés : $_soundEnabled');
   }
@@ -87,12 +88,12 @@ class SoundService {
     if (!_soundEnabled) return;
 
     try {
-      // Stopper le son précédent si un son est en cours
+      // S'assurer que le mode de libération est bien sur STOP ou RELEASE
+      await _player.setReleaseMode(ReleaseMode.stop);
       await _player.stop();
       await _player.play(AssetSource(assetPath));
     } catch (e) {
-      // Ne pas bloquer l'app si un fichier audio est manquant
-      debugPrint('[SoundService] Erreur lecture son $assetPath : $e');
+      debugPrint('[SoundService] Erreur lecture : $e');
     }
   }
 

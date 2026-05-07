@@ -3,7 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
-
+import 'package:pharma_ai/core/services/vibration_service.dart';
+import 'package:pharma_ai/core/services/sound_service.dart';
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -19,7 +20,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController    = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController  = TextEditingController();
-
+  final _vibration = VibrationService();
+  final _sound     = SoundService();
   bool _isLoading    = false;
   bool _showPassword = false;
   bool _showConfirm  = false;
@@ -35,7 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _register() async {
+ /* Future<void> _register() async {
     setState(() => _errorMessage = '');
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
@@ -92,6 +94,95 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
     } catch (e) {
       setState(() => _errorMessage = 'Une erreur inattendue est survenue.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }*/
+  Future<void> _register() async {
+    setState(() => _errorMessage = '');
+
+    // ── Validation du formulaire ────────────────────────────────
+    if (!_formKey.currentState!.validate()) {
+      // ✅ Vibration + son erreur si validation échoue
+      await _vibration.error();
+      await _sound.playError();
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email:    _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      await credential.user!.updateDisplayName(_nameController.text.trim());
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(credential.user!.uid)
+          .set({
+        'uid'      : credential.user!.uid,
+        'name'     : _nameController.text.trim(),
+        'email'    : _emailController.text.trim(),
+        'phone'    : _phoneController.text.trim(),
+        'role'     : 'client',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
+        // ✅ Succès inscription — son + vibration
+        await _vibration.success();
+        await _sound.playSuccess();
+
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.accountCreated),
+            backgroundColor: const Color(0xFF2E7D32),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        await FirebaseAuth.instance.signOut();
+        Navigator.pop(context);
+      }
+
+    } on FirebaseAuthException catch (e) {
+      // ✅ Erreur Firebase — son + vibration
+      await _vibration.error();
+      await _sound.playError();
+
+      setState(() {
+        switch (e.code) {
+          case 'email-already-in-use':
+            _errorMessage = 'Cet email est déjà utilisé par un autre compte.';
+            break;
+          case 'weak-password':
+            _errorMessage = 'Le mot de passe est trop faible (min. 6 caractères).';
+            break;
+          case 'invalid-email':
+            _errorMessage = 'Adresse email invalide.';
+            break;
+          case 'network-request-failed':
+            _errorMessage = 'Pas de connexion internet. Vérifiez votre réseau.';
+            break;
+          case 'too-many-requests':
+            _errorMessage = 'Trop de tentatives. Réessayez dans quelques minutes.';
+            break;
+          default:
+            _errorMessage = 'Erreur : ${e.message}';
+        }
+      });
+
+    } catch (e) {
+      // ✅ Erreur inattendue — son + vibration
+      await _vibration.error();
+      await _sound.playError();
+
+      setState(() => _errorMessage = 'Une erreur inattendue est survenue.');
+
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

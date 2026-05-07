@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
+import 'package:pharma_ai/core/services/vibration_service.dart';
+import 'package:pharma_ai/core/services/sound_service.dart';
 
 class MedicationsScreen extends StatefulWidget {
   const MedicationsScreen({super.key});
@@ -20,6 +22,8 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
   static const Color _couleurSuccess    = Color(0xFF2E7D32);
   static const Color _couleurWarning    = Color(0xFFF9A825);
   static const Color _couleurDanger     = Color(0xFFC62828);
+  final _vibration = VibrationService();
+  final _sound     = SoundService();
 
   static const List<String> _categories = [
     'Antibiotique', 'Antidouleur', 'Anti-inflammatoire',
@@ -37,7 +41,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
   }
 
   // ─── Supprimer un médicament ──────────────────────────────────
-  Future<void> _deleteMedication(
+  /*Future<void> _deleteMedication(
       String docId, String name, AppLocalizations l10n) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -67,7 +71,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
           .collection('medications')
           .doc(docId)
           .delete();
-
+      await Future.wait([_sound.playError(), _vibration.error()]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -75,6 +79,64 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
             backgroundColor: _couleurSuccess,
           ),
         );
+      }
+    }
+  }*/
+  Future<void> _deleteMedication(
+      String docId, String name, AppLocalizations l10n) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: Text(l10n.delete),
+        content: Text('$name ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: _couleurDanger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.delete,
+                style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('medications')
+            .doc(docId)
+            .delete();
+
+        // ✅ Suppression réussie
+        await Future.wait([_sound.playError(), _vibration.error()]);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('"$name" supprimé'),
+              backgroundColor: _couleurSuccess,
+            ),
+          );
+        }
+      } catch (e) {
+        // ✅ Erreur suppression Firestore
+        await Future.wait([_sound.playError(), _vibration.error()]);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur suppression : $e'),
+              backgroundColor: _couleurDanger,
+            ),
+          );
+        }
       }
     }
   }
@@ -412,6 +474,8 @@ class _MedicationFormState extends State<_MedicationForm> {
   String?   _selectedCategory;
   DateTime? _selectedExpiryDate;
   bool      _isLoading = false;
+  final _vibration = VibrationService();
+  final _sound     = SoundService();
 
   // ✅ Couleurs sémantiques conservées (statut)
   static const Color _couleurDanger  = Color(0xFFC62828);
@@ -474,7 +538,10 @@ class _MedicationFormState extends State<_MedicationForm> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      await Future.wait([_sound.playError(), _vibration.error()]);
+      return;
+    }
     setState(() => _isLoading = true);
 
     try {
@@ -499,6 +566,7 @@ class _MedicationFormState extends State<_MedicationForm> {
             .doc(widget.doc!.id)
             .update(data);
       }
+      await Future.wait([_sound.playSuccess(), _vibration.success()]);
 
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
@@ -513,6 +581,7 @@ class _MedicationFormState extends State<_MedicationForm> {
         );
       }
     } catch (e) {
+      await Future.wait([_sound.playError(), _vibration.error()]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

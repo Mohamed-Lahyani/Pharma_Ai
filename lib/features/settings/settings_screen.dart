@@ -4,8 +4,36 @@ import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../core/l10n/language_provider.dart';
-
+import '../../core/services/sound_service.dart';
+import '../../core/services/vibration_service.dart';
+import 'package:pharma_ai/core/services/notification_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 final notificationsEnabledProvider = StateProvider<bool>((ref) => true);
+
+// ── Providers Son & Vibration ────────────────────────────────
+final soundEnabledProvider = StateNotifierProvider<_BoolNotifier, bool>(
+      (ref) => _BoolNotifier(
+    initialValue: SoundService().isSoundEnabled,
+    onChanged: (v) => SoundService().setSoundEnabled(v),
+  ),
+);
+
+final vibrationEnabledProvider = StateNotifierProvider<_BoolNotifier, bool>(
+      (ref) => _BoolNotifier(
+    initialValue: VibrationService().isVibrationEnabled,
+    onChanged: (v) => VibrationService().setVibrationEnabled(v),
+  ),
+);
+
+class _BoolNotifier extends StateNotifier<bool> {
+  final Future<void> Function(bool) onChanged;
+  _BoolNotifier({required bool initialValue, required this.onChanged})
+      : super(initialValue);
+  Future<void> set(bool value) async {
+    state = value;
+    await onChanged(value);
+  }
+}
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -17,6 +45,8 @@ class SettingsScreen extends ConsumerWidget {
     final currentLang  = ref.watch(languageProvider);
     final langNotif    = ref.read(languageProvider.notifier);
     final notifEnabled = ref.watch(notificationsEnabledProvider);
+    final soundEnabled     = ref.watch(soundEnabledProvider);
+    final vibrationEnabled = ref.watch(vibrationEnabledProvider);
 
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme   = Theme.of(context).textTheme;
@@ -142,57 +172,193 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 8),
 
           Card(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  Container(
-                    width : 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color       : AppTheme.amber.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.notifications_active_rounded,
-                      color: AppTheme.amber,
-                      size : 20,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.notifications,
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+            child: Column(
+              children: [
+
+                // ── Toggle notifications ──────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width : 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color       : AppTheme.amber.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        Text(
-                          'Rappels médicaments et alertes stock',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.6),
-                          ),
+                        child: const Icon(
+                          Icons.notifications_active_rounded,
+                          color: AppTheme.amber,
+                          size : 20,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.notifications,
+                              style: textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              'Rappels médicaments et alertes stock',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value    : notifEnabled,
+                        onChanged: (val) => ref
+                            .read(notificationsEnabledProvider.notifier)
+                            .state = val,
+                      ),
+                    ],
                   ),
-                  Switch(
-                    value    : notifEnabled,
-                    onChanged: (val) => ref
-                        .read(notificationsEnabledProvider.notifier)
-                        .state = val,
-                  ),
-                ],
-              ),
+                ),
+
+                const Divider(height: 1, indent: 56),
+
+                // ── Test notification immédiate ───────────────
+                _TestNotificationTile(
+                  colorScheme: colorScheme,
+                  textTheme  : textTheme,
+                ),
+
+              ],
             ),
           ),
 
           const SizedBox(height: 28),
 
-          // ── SECTION 4 : À propos ────────────────────────────
+
+          // ── SECTION 4 : Son & Vibration ─────────────────────
+          _SectionTitle(
+            icon : Icons.volume_up_outlined,
+            label: 'Son & Vibration',
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: 8),
+
+          Card(
+            child: Column(
+              children: [
+
+                // ── Son ──────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width : 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color       : Colors.blue.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          soundEnabled
+                              ? Icons.volume_up_rounded
+                              : Icons.volume_off_rounded,
+                          color: Colors.blue,
+                          size : 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Sons',
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Bips scan, succès, erreurs',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value    : soundEnabled,
+                        onChanged: (val) =>
+                            ref.read(soundEnabledProvider.notifier).set(val),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 1, indent: 56),
+
+                // ── Vibration ────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width : 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color       : AppTheme.green.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          vibrationEnabled
+                              ? Icons.vibration_rounded
+                              : Icons.phonelink_erase_rounded,
+                          color: AppTheme.green,
+                          size : 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Vibrations',
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Retour haptique lors des actions',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value    : vibrationEnabled,
+                        onChanged: (val) =>
+                            ref.read(vibrationEnabledProvider.notifier).set(val),
+                      ),
+                    ],
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+
+          // ── SECTION 5 : À propos ────────────────────────────
           _SectionTitle(
             icon : Icons.info_outline_rounded,
             label: l10n.about,
@@ -255,6 +421,10 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+
+          const SizedBox(height: 40),
+          // ── Déconnexion ─────────────────────────────────────
+          _LogoutTile(),
 
           const SizedBox(height: 40),
         ],
@@ -399,6 +569,288 @@ class _LanguageOption extends StatelessWidget {
           ? Icon(Icons.check_circle_rounded, color: colorScheme.primary)
           : Icon(Icons.radio_button_unchecked_rounded,
           color: colorScheme.onSurface.withValues(alpha: 0.3)),
+    );
+  }
+}
+class _TestNotificationTile extends StatefulWidget {
+  final ColorScheme colorScheme;
+  final TextTheme   textTheme;
+
+  const _TestNotificationTile({
+    required this.colorScheme,
+    required this.textTheme,
+  });
+
+  @override
+  State<_TestNotificationTile> createState() => _TestNotificationTileState();
+}
+
+class _TestNotificationTileState extends State<_TestNotificationTile> {
+  bool _isSending = false;
+
+  Future<void> _envoyerTestNotification() async {
+    if (_isSending) return;
+    setState(() => _isSending = true);
+
+    try {
+      // ✅ Son + vibration au moment du test
+      await Future.wait([
+        SoundService().playNotification(),
+        VibrationService().doubleVibrate(),
+      ]);
+
+      // ✅ Notification locale immédiate (dans 3 secondes)
+      await NotificationService().scheduleTestNotification(
+        id     : 9999,
+        titre  : '🔔 Test PharmaAI',
+        message: 'Votre rappel de médicament fonctionne correctement !',
+        delaySeconds: 3,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Notification test envoyée dans 3 secondes'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF2E7D32),
+          behavior       : SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: const Color(0xFFC62828),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── En-tête ────────────────────────────────────────
+          Row(
+            children: [
+              Container(
+                width : 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9A825).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.notifications_active_rounded,
+                  color: Color(0xFFF9A825),
+                  size : 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Test de notification',
+                      style: widget.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      'Envoyer un rappel immédiat de test',
+                      style: widget.textTheme.bodySmall?.copyWith(
+                        color: widget.colorScheme.onSurface
+                            .withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Bouton test ────────────────────────────────────
+          SizedBox(
+            width : double.infinity,
+            height: 44,
+            child : ElevatedButton.icon(
+              onPressed: _isSending ? null : _envoyerTestNotification,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF9A825),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
+              ),
+              icon : _isSending
+                  ? const SizedBox(
+                width : 16,
+                height: 16,
+                child : CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2),
+              )
+                  : const Icon(Icons.send_rounded, size: 18),
+              label: Text(
+                _isSending ? 'Envoi...' : 'Envoyer un rappel test',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+class _LogoutTile extends ConsumerStatefulWidget {
+  const _LogoutTile();
+
+  @override
+  ConsumerState<_LogoutTile> createState() => _LogoutTileState();
+}
+
+class _LogoutTileState extends ConsumerState<_LogoutTile> {
+  static const Color _rouge = Color(0xFFC62828);
+  bool _isLoading = false;
+
+  Future<void> _confirmerDeconnexion() async {
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.logout, color: Color(0xFFC62828)),
+            SizedBox(width: 8),
+            Text(
+              'Déconnexion',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Êtes-vous sûr de vouloir vous déconnecter ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _rouge,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Se déconnecter',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirme != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur : $e'),
+            backgroundColor: _rouge,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap     : _isLoading ? null : _confirmerDeconnexion,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              // ── Icône ──────────────────────────────────────
+              Container(
+                width : 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color       : _rouge.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: _isLoading
+                    ? const Padding(
+                  padding: EdgeInsets.all(10),
+                  child  : CircularProgressIndicator(
+                      color: _rouge, strokeWidth: 2),
+                )
+                    : const Icon(Icons.logout, color: _rouge, size: 20),
+              ),
+              const SizedBox(width: 14),
+
+              // ── Texte ──────────────────────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Se déconnecter',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color     : _rouge,
+                      ),
+                    ),
+                    Text(
+                      'Fermer la session en cours',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Flèche ─────────────────────────────────────
+              Icon(
+                Icons.chevron_right_rounded,
+                color: _rouge.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

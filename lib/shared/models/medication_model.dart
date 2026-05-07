@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class MedicationModel {
   final String id;
   final String name;
@@ -6,7 +8,7 @@ class MedicationModel {
   final int stock;
   final String description;
   final String category;
-  final String expiryDate;
+  final DateTime expiryDate;
 
   MedicationModel({
     required this.id,
@@ -19,7 +21,6 @@ class MedicationModel {
     required this.expiryDate,
   });
 
-  // Convertir Firestore → MedicationModel
   factory MedicationModel.fromMap(Map<String, dynamic> map, String id) {
     return MedicationModel(
       id: id,
@@ -29,11 +30,10 @@ class MedicationModel {
       stock: map['stock'] ?? 0,
       description: map['description'] ?? '',
       category: map['category'] ?? '',
-      expiryDate: map['expiryDate'] ?? '',
+      expiryDate: (map['expiryDate'] as Timestamp).toDate(),
     );
   }
 
-  // Convertir MedicationModel → Firestore
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -42,10 +42,9 @@ class MedicationModel {
       'stock': stock,
       'description': description,
       'category': category,
-      'expiryDate': expiryDate,
+      'expiryDate': Timestamp.fromDate(expiryDate),
     };
   }
 
-  // Vérifier si le stock est critique (moins de 5)
   bool get isLowStock => stock < 5;
 }

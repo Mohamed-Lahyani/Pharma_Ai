@@ -310,4 +310,39 @@ class NotificationService {
       payload: 'ordonnance_$ordonnanceId',
     );
   }
+  /// Notification de test — se déclenche après [delaySeconds] secondes
+  Future<void> scheduleTestNotification({
+    required int    id,
+    required String titre,
+    required String message,
+    int delaySeconds = 3,
+  }) async {
+    final scheduledDate = tz.TZDateTime.now(tz.local)
+        .add(Duration(seconds: delaySeconds));
+
+    await _plugin.zonedSchedule(
+      id,
+      titre,
+      message,
+      scheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'pharma_test_channel',
+          'Test Notifications',
+          channelDescription: 'Canal de test PharmaAI',
+          importance : Importance.high,
+          priority   : Priority.high,
+          icon       : '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+      UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
 }

@@ -7,18 +7,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
+import 'package:pharma_ai/core/services/sound_service.dart';
+import 'package:pharma_ai/core/services/vibration_service.dart';
 import 'dart:io';
 
-// ═══════════════════════════════════════════════════════════════
-// OcrScannerScreen — Scanner d'ordonnance avec ML Kit OCR
-//
-// Fonctionnement :
-//   1. L'utilisateur prend une photo OU importe depuis la galerie
-//   2. ML Kit extrait le texte de l'image
-//   3. On détecte automatiquement les médicaments dans le texte
-//   4. L'ordonnance est envoyée dans Firestore (status: 'pending')
-//   5. L'admin peut ensuite la valider ou rejeter
-// ═══════════════════════════════════════════════════════════════
+
 
 class OcrScannerScreen extends StatefulWidget {
   const OcrScannerScreen({super.key});
@@ -32,6 +25,10 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
   static const Color green = Color(0xFF2E7D32);
   static const Color amber = Color(0xFFF9A825);
   static const Color red   = Color(0xFFC62828);
+
+  // ── Services son & vibration ───────────────────────────────
+  final _sound     = SoundService();
+  final _vibration = VibrationService();
 
   // ── État de l'écran ────────────────────────────────────────
   // 'initial'    → page d'accueil (aucune image)
@@ -86,6 +83,8 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
 
       await _extraireTexte();
     } catch (e) {
+      await _vibration.error();
+      await _sound.playError();
       setState(() {
         _erreur = 'Erreur caméra : $e';
         _etape  = 'initial';
@@ -114,6 +113,9 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
 
       await _extraireTexte();
     } catch (e) {
+      await _vibration.error();
+      await _sound.playError();
+
       setState(() {
         _erreur = 'Erreur galerie : $e';
         _etape  = 'initial';
@@ -142,6 +144,8 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       final texte = recognized.text.trim();
 
       if (texte.isEmpty) {
+        await _vibration.error();
+        await _sound.playError();
         setState(() {
           _erreur = 'Aucun texte détecté. Essayez avec une image plus nette.';
           _etape  = 'initial';
@@ -150,7 +154,11 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       }
 
       final meds = _detecterMedicaments(texte);
-
+      await _vibration.scanFeedback();
+      await _sound.playScanBeep();
+      await Future.delayed(const Duration(milliseconds: 300));
+      await _vibration.success();
+      await _sound.playSuccess();
       setState(() {
         _texteExtrait         = texte;
         _medsDetectes         = meds;
@@ -158,6 +166,8 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
         _texteController.text = texte;
       });
     } catch (e) {
+      await _vibration.error();
+      await _sound.playError();
       setState(() {
         _erreur = 'Erreur OCR : $e';
         _etape  = 'initial';
@@ -228,7 +238,11 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       });
 
       setState(() => _etape = 'done');
+      // 🔊 Feedback succès — ordonnance envoyée
+      await Future.wait([_sound.playSuccess(), _vibration.success()]);
     } catch (e) {
+      // 🔊 Feedback erreur — envoi échoué
+      await Future.wait([_sound.playError(), _vibration.error()]);
       setState(() {
         _erreur = 'Erreur envoi : $e';
         _etape  = 'result';

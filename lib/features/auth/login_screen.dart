@@ -6,8 +6,8 @@ import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-// ✅ Import google_sign_in supprimé — non utilisé (signInWithPopup ne nécessite pas GoogleSignIn)
-
+import 'package:pharma_ai/core/services/vibration_service.dart';
+import 'package:pharma_ai/core/services/sound_service.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -23,6 +23,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isGoogleLoading = false;
   bool _obscurePassword = true;
   String _errorMessage  = '';
+  final _vibration = VibrationService();
+  final _sound     = SoundService();
 
   @override
   void dispose() {
@@ -31,8 +33,39 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ─── Connexion Email / Mot de passe ───────────────────────────
   Future<void> _login() async {
+    final email    = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty) {
+      await _vibration.error();
+      await _sound.playError();
+      setState(() => _errorMessage = 'Veuillez entrer votre adresse email.');
+      return;
+    }
+
+    final emailRegex = RegExp(r'^[\w.-]+@[\w.-]+\.\w{2,}$');
+    if (!emailRegex.hasMatch(email)) {
+      await _vibration.error();
+      await _sound.playError();
+      setState(() => _errorMessage = 'Adresse email invalide (ex: nom@domaine.com).');
+      return;
+    }
+
+    if (password.isEmpty) {
+      await _vibration.error();
+      await _sound.playError();
+      setState(() => _errorMessage = 'Veuillez entrer votre mot de passe.');
+      return;
+    }
+
+    if (password.length < 6) {
+      await _vibration.error();
+      await _sound.playError();
+      setState(() => _errorMessage = 'Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+
     setState(() {
       _isLoading    = true;
       _errorMessage = '';
@@ -40,10 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
-        email:    _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+          .signInWithEmailAndPassword(email: email, password: password);
 
       final doc = await FirebaseFirestore.instance
           .collection('users')
@@ -53,6 +83,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (doc.exists) {
+        await _vibration.success();
+        await _sound.playSuccess();
+
         final role = doc.data()!['role'];
         if (role == 'admin') {
           Navigator.pushReplacementNamed(context, '/admin');
@@ -60,70 +93,52 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacementNamed(context, '/client');
         }
       } else {
-        setState(() {
-          _errorMessage = 'Utilisateur introuvable dans la base de données.';
-        });
+        await _vibration.error();
+        await _sound.playError();
+        setState(() => _errorMessage = 'Compte introuvable. Veuillez vous inscrire.');
       }
+
     } on FirebaseAuthException catch (e) {
+      await _vibration.error();
+      await _sound.playError();
+
       setState(() {
-        if (e.code == 'user-not-found') {
-          _errorMessage = 'Aucun compte trouvé avec cet email.';
-        } else if (e.code == 'wrong-password') {
-          _errorMessage = 'Mot de passe incorrect.';
-        } else {
-          _errorMessage = 'Erreur : ${e.message}';
+        switch (e.code) {
+          case 'user-not-found':
+            _errorMessage = 'Aucun compte associé à cet email.';
+            break;
+          case 'wrong-password':
+            _errorMessage = 'Mot de passe incorrect. Réessayez.';
+            break;
+          case 'invalid-email':
+            _errorMessage = 'Format d\'email invalide.';
+            break;
+          case 'user-disabled':
+            _errorMessage = 'Ce compte a été désactivé. Contactez le support.';
+            break;
+          case 'too-many-requests':
+            _errorMessage = 'Trop de tentatives. Réessayez dans quelques minutes.';
+            break;
+          case 'network-request-failed':
+            _errorMessage = 'Pas de connexion internet. Vérifiez votre réseau.';
+            break;
+          case 'invalid-credential':
+            _errorMessage = 'Email ou mot de passe incorrect.';
+            break;
+          default:
+            _errorMessage = 'Erreur de connexion. Réessayez.';
         }
       });
+
+    } catch (e) {
+      await _vibration.error();
+      await _sound.playError();
+      setState(() => _errorMessage = 'Erreur inattendue. Réessayez.');
+
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  // ─── Connexion Google ─────────────────────────────────────────
- /* Future<void> _loginWithGoogle() async {
-    setState(() {
-      _isGoogleLoading = true;
-      _errorMessage    = '';
-    });
-
-    try {
-      final googleProvider = GoogleAuthProvider();
-      final userCredential = await FirebaseAuth.instance
-          .signInWithPopup(googleProvider);
-
-      final user = userCredential.user!;
-      final doc  = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      if (!doc.exists) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .set({
-          'uid'      : user.uid,
-          'name'     : user.displayName ?? 'Utilisateur',
-          'email'    : user.email ?? '',
-          'phone'    : '',
-          'role'     : 'client',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      if (!mounted) return;
-      final role = doc.exists ? (doc.data()!['role'] ?? 'client') : 'client';
-      if (role == 'admin') {
-        Navigator.pushReplacementNamed(context, '/admin');
-      } else {
-        Navigator.pushReplacementNamed(context, '/client');
-      }
-    } catch (e) {
-      setState(() => _errorMessage = 'Erreur Google : $e');
-    } finally {
-      if (mounted) setState(() => _isGoogleLoading = false);
-    }
-  }*/
   Future<void> _loginWithGoogle() async {
     setState(() {
       _isGoogleLoading = true;
@@ -134,12 +149,10 @@ class _LoginScreenState extends State<LoginScreen> {
       UserCredential userCredential;
 
       if (kIsWeb) {
-        // ── WEB : signInWithPopup (ton ancien code) ───────────
         final googleProvider = GoogleAuthProvider();
         userCredential = await FirebaseAuth.instance
             .signInWithPopup(googleProvider);
       } else {
-        // ── MOBILE : signInWithCredential ─────────────────────
         final googleUser = await GoogleSignIn().signIn();
         if (googleUser == null) {
           setState(() => _isGoogleLoading = false);
@@ -153,8 +166,6 @@ class _LoginScreenState extends State<LoginScreen> {
         userCredential = await FirebaseAuth.instance
             .signInWithCredential(credential);
       }
-
-      // ── Partie commune Web + Mobile ────────────────────────
       final user = userCredential.user!;
       final doc  = await FirebaseFirestore.instance
           .collection('users')
@@ -176,6 +187,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (!mounted) return;
+      await _vibration.success();
+      await _sound.playSuccess();
+
       final role = doc.exists ? (doc.data()!['role'] ?? 'client') : 'client';
       if (role == 'admin') {
         Navigator.pushReplacementNamed(context, '/admin');
@@ -184,6 +198,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
     } catch (e) {
+      await _vibration.error();
+      await _sound.playError();
+
       setState(() => _errorMessage = 'Erreur Google : $e');
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
@@ -195,7 +212,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      // ✅ Fond adaptatif
       backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -205,7 +221,6 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 60),
 
-              // ── Logo et titre ───────────────────────────────
               Center(
                 child: Column(
                   children: [
@@ -213,7 +228,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        // ✅ Couleur primaire adaptative
                         color: Theme.of(context).colorScheme.primary,
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -229,7 +243,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        // ✅ Couleur primaire adaptative
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
@@ -238,7 +251,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       l10n.signIn,
                       style: TextStyle(
                         fontSize: 14,
-                        // ✅ Texte secondaire adaptatif
                         color: AppColors.textSecondary(context),
                       ),
                     ),
@@ -248,13 +260,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 50),
 
-              // ── Champ Email ─────────────────────────────────
               Text(
                 l10n.email,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
-                  // ✅ Texte principal adaptatif
                   color: AppColors.onSurface(context),
                 ),
               ),
@@ -268,20 +278,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12)),
                   filled: true,
-                  // ✅ Fond input adaptatif
                   fillColor: AppColors.inputFill(context),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // ── Champ Mot de passe ──────────────────────────
               Text(
                 l10n.password,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
-                  // ✅ Texte principal adaptatif
                   color: AppColors.onSurface(context),
                 ),
               ),
@@ -302,19 +309,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12)),
                   filled: true,
-                  // ✅ Fond input adaptatif
                   fillColor: AppColors.inputFill(context),
                 ),
               ),
 
               const SizedBox(height: 12),
 
-              // ── Message d'erreur ────────────────────────────
               if (_errorMessage.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    // ✅ .withValues() remplace .withOpacity() — rouge sémantique conservé
                     color: Colors.red.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
@@ -338,14 +342,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // ── Bouton Se connecter ─────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    // ✅ Couleur primaire adaptative
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
@@ -363,19 +365,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // ── Séparateur OU ───────────────────────────────
               Row(
                 children: [
                   Expanded(
                       child: Divider(
-                        // ✅ Bordure adaptative
                           color: AppColors.border(context))),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'OU',
                       style: TextStyle(
-                        // ✅ Texte secondaire adaptatif
                         color: AppColors.textSecondary(context),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -390,17 +389,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // ── Bouton Google ───────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton(
                   onPressed: _isGoogleLoading ? null : _loginWithGoogle,
                   style: OutlinedButton.styleFrom(
-                    // ✅ Bordure adaptative
                     side: BorderSide(
                         color: AppColors.border(context), width: 1.5),
-                    // ✅ Fond adaptatif (surface au lieu de Colors.white fixe)
                     backgroundColor: AppColors.surface(context),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -411,7 +407,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      // ✅ Couleur primaire adaptative
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   )
@@ -425,7 +420,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          // ✅ Texte adaptatif (était Color(0xFF3C4043) fixe)
                           color: AppColors.onSurface(context),
                         ),
                       ),
@@ -436,7 +430,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 28),
 
-              // ── Lien S'inscrire ─────────────────────────────
               Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -444,7 +437,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'Pas encore de compte ? ',
                       style: TextStyle(
-                        // ✅ Texte secondaire adaptatif
                           color: AppColors.textSecondary(context)),
                     ),
                     GestureDetector(
@@ -459,7 +451,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         l10n.signUp,
                         style: TextStyle(
-                          // ✅ Couleur primaire adaptative
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
@@ -478,7 +469,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ── Widget icône Google ───────────────────────────────────────
 class _GoogleIcon extends StatelessWidget {
   const _GoogleIcon();
 
@@ -507,7 +497,6 @@ class _GoogleIcon extends StatelessWidget {
   }
 }
 
-// ── Painter icône Google — couleurs officielles, inchangées ───
 class _GoogleIconPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

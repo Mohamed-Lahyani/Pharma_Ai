@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import 'package:pharma_ai/core/services/notification_service.dart';
+import 'package:pharma_ai/core/services/sound_service.dart';
+import 'package:pharma_ai/core/services/vibration_service.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // ReminderScreen — Rappels de prise de médicaments
@@ -31,6 +33,10 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
   // ── Singleton NotificationService ─────────────────────────
   final NotificationService _notifService = NotificationService();
+
+  // ── Services son & vibration ───────────────────────────────
+  final _sound     = SoundService();
+  final _vibration = VibrationService();
 
   @override
   Widget build(BuildContext context) {
@@ -421,11 +427,16 @@ class _ReminderScreenState extends State<ReminderScreen> {
           heureStr   : data['time'] ?? '08:00',
           frequence  : data['frequency'] ?? 'daily',
         );
+        await Future.wait([_sound.playNotification(), _vibration.doubleVibrate()]);
       } else {
         // Désactiver → annuler toutes les notifs liées à ce rappel
         await _annulerNotifications(docId, data['frequency'] ?? 'daily');
+        await Future.wait([_sound.playNotification(), _vibration.light()]);
+
       }
     } catch (e) {
+      await Future.wait([_sound.playError(), _vibration.error()]);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -482,6 +493,9 @@ class _ReminderScreenState extends State<ReminderScreen> {
         // 3. Annuler la notification locale
         await _annulerNotifications(docId, freq);
 
+        // 🔊 Feedback destructif — suppression réussie
+        await Future.wait([_sound.playError(), _vibration.error()]);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -494,6 +508,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
           );
         }
       } catch (e) {
+        await Future.wait([_sound.playError(), _vibration.error()]);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -528,6 +543,8 @@ class _ReminderScreenState extends State<ReminderScreen> {
             heureStr : savedData['time'] ?? '08:00',
             frequence: savedData['frequency'] ?? 'daily',
           );
+          // 🔊 Feedback succès — rappel sauvegardé
+          await Future.wait([_sound.playSuccess(), _vibration.doubleVibrate()]);
         },
       ),
     );
@@ -696,6 +713,8 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
   TimeOfDay _heureSelectionnee = const TimeOfDay(hour: 8, minute: 0);
   String    _frequence         = 'daily';
   bool      _isLoading         = false;
+  final _sound     = SoundService();
+  final _vibration = VibrationService();
 
   final List<Map<String, String>> _frequences = [
     {'valeur': 'daily',    'labelKey': 'daily'},
@@ -753,7 +772,11 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
 
   // ── Sauvegarder dans Firestore puis planifier la notif ─────
   Future<void> _sauvegarder() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      await _vibration.error();
+      await _sound.playError();
+      return;
+    }
     setState(() => _isLoading = true);
 
     final heureStr =
@@ -810,6 +833,7 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
         );
       }
     } catch (e) {
+      await Future.wait([_sound.playError(), _vibration.error()]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

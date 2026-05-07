@@ -83,14 +83,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             tooltip: l10n.settings,
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
-          IconButton(
+         /* IconButton(
             icon: const Icon(Icons.logout),
             tooltip: l10n.signOut,
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               Navigator.pushReplacementNamed(context, '/');
             },
-          ),
+          ),*/
         ],
       ),
       body: _isLoading
