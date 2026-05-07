@@ -23,7 +23,7 @@ const medications = [
   // ── ANTIDOULEUR ──────────────────────────────────────────
   {
     name: "Doliprane 1000mg",
-    barcode: "3400936700013",
+    barcode: "3400936700017",
     price: 65.0,
     stock: 150,
     description: "Paracétamol adulte. Max 4g/jour. Espacer les prises d'au moins 4h. Ne pas dépasser 8 comprimés par jour.",
@@ -126,7 +126,7 @@ const medications = [
   },
   {
     name: "Augmentin 1g",
-    barcode: "3400937250013",
+    barcode: "3400937250016",
     price: 185.0,
     stock: 35,
     description: "Amoxicilline + Acide clavulanique. Infections résistantes. 1 comprimé 2x/jour. Ordonnance.",
@@ -403,7 +403,7 @@ const medications = [
   // ── PNEUMOLOGIE ──────────────────────────────────────────
   {
     name: "Ventoline 100µg/dose",
-    barcode: "3400937100008",
+    barcode: "3400937100007",
     price: 180.0,
     stock: 30,
     description: "Salbutamol. Bronchodilatateur. 1 à 2 bouffées en cas de crise d'asthme.",

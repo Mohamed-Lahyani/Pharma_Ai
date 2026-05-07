@@ -594,7 +594,21 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     final int    stock       = (med['stock']       ?? 0) as int;
     final String description = med['description'] ?? '';
     final String categorie   = med['category']    ?? '';
-    final String expiry      = med['expiryDate']  ?? '';
+
+    // Conversion Timestamp Firestore → String lisible
+    String expiry = '';
+    final expiryRaw = med['expiryDate'];
+    if (expiryRaw != null) {
+      if (expiryRaw is Timestamp) {
+        final date = expiryRaw.toDate();
+        expiry = '${date.day.toString().padLeft(2, '0')}/'
+            '${date.month.toString().padLeft(2, '0')}/'
+            '${date.year}';
+      } else if (expiryRaw is String) {
+        expiry = expiryRaw;
+      }
+    }
+
     final bool   stockCritique = stock < 5;
 
     return Container(
