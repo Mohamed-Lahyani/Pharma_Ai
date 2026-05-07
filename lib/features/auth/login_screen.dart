@@ -4,8 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pharma_ai/features/auth/register_screen.dart';
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
-
-// ✅ Import google_sign_in supprimé — non utilisé (signInWithPopup ne nécessite pas GoogleSignIn)
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ─── Connexion Google ─────────────────────────────────────────
-  Future<void> _loginWithGoogle() async {
+  /* Future<void> _loginWithGoogle() async {
     setState(() {
       _isGoogleLoading = true;
       _errorMessage    = '';
@@ -117,6 +117,71 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         Navigator.pushReplacementNamed(context, '/client');
       }
+    } catch (e) {
+      setState(() => _errorMessage = 'Erreur Google : $e');
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }*/
+  Future<void> _loginWithGoogle() async {
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage    = '';
+    });
+
+    try {
+      UserCredential userCredential;
+
+      if (kIsWeb) {
+        // ── WEB : signInWithPopup (ton ancien code) ───────────
+        final googleProvider = GoogleAuthProvider();
+        userCredential = await FirebaseAuth.instance
+            .signInWithPopup(googleProvider);
+      } else {
+        // ── MOBILE : signInWithCredential ─────────────────────
+        final googleUser = await GoogleSignIn().signIn();
+        if (googleUser == null) {
+          setState(() => _isGoogleLoading = false);
+          return;
+        }
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken:     googleAuth.idToken,
+        );
+        userCredential = await FirebaseAuth.instance
+            .signInWithCredential(credential);
+      }
+
+      // ── Partie commune Web + Mobile ────────────────────────
+      final user = userCredential.user!;
+      final doc  = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!doc.exists) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set({
+          'uid'      : user.uid,
+          'name'     : user.displayName ?? 'Utilisateur',
+          'email'    : user.email ?? '',
+          'phone'    : '',
+          'role'     : 'client',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (!mounted) return;
+      final role = doc.exists ? (doc.data()!['role'] ?? 'client') : 'client';
+      if (role == 'admin') {
+        Navigator.pushReplacementNamed(context, '/admin');
+      } else {
+        Navigator.pushReplacementNamed(context, '/client');
+      }
+
     } catch (e) {
       setState(() => _errorMessage = 'Erreur Google : $e');
     } finally {
