@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
@@ -28,7 +29,17 @@ class NotificationService {
   Future<void> init() async {
     tz_data.initializeTimeZones();
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    try {
+      final String timezoneName = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezoneName));
+      debugPrint('[NotificationService] Timezone : $timezoneName');
+    } catch (e) {
+      tz.setLocalLocation(tz.UTC);
+      debugPrint('[NotificationService] Timezone fallback UTC : $e');
+    }
+
+    const androidSettings =
+    AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -44,16 +55,26 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    // Demande la permission au premier lancement
+    await checkAndRequestPermission();
 
     debugPrint('[NotificationService] Initialisé avec succès');
   }
 
   void _onNotificationTapped(NotificationResponse response) {
     debugPrint('[NotificationService] Notification tapée : ${response.payload}');
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // PERMISSION
+  // ════════════════════════════════════════════════════════════
+
+  Future<bool> checkAndRequestPermission() async {
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<  // ✅ < manquait ici
+        AndroidFlutterLocalNotificationsPlugin>();
+    final granted = await android?.requestNotificationsPermission();
+    return granted ?? false;
   }
 
   // ════════════════════════════════════════════════════════════
@@ -177,13 +198,13 @@ class NotificationService {
       details,
       payload: 'reminder_$id',
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      // ✅ CORRECTION : paramètre obligatoire pour iOS
       uiLocalNotificationDateInterpretation:
       UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
 
-    debugPrint('[NotificationService] Rappel quotidien planifié : $medicationName à $hour:$minute');
+    debugPrint(
+        '[NotificationService] Rappel quotidien planifié : $medicationName à $hour:$minute');
   }
 
   Future<void> scheduleReminderWeekly({
@@ -208,7 +229,8 @@ class NotificationService {
       hour, minute,
     );
 
-    if (scheduledDate.isBefore(now)) {
+    // Avancer jusqu'à la prochaine occurrence (même jour de semaine)
+    while (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
@@ -220,13 +242,13 @@ class NotificationService {
       details,
       payload: 'reminder_$id',
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      // ✅ CORRECTION : paramètre obligatoire pour iOS
       uiLocalNotificationDateInterpretation:
       UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
     );
 
-    debugPrint('[NotificationService] Rappel hebdomadaire planifié : $medicationName à $hour:$minute');
+    debugPrint(
+        '[NotificationService] Rappel hebdomadaire planifié : $medicationName à $hour:$minute');
   }
 
   // ════════════════════════════════════════════════════════════

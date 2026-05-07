@@ -6,6 +6,7 @@ import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+// ✅ Import google_sign_in supprimé — non utilisé (signInWithPopup ne nécessite pas GoogleSignIn)
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -79,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ─── Connexion Google ─────────────────────────────────────────
-  /* Future<void> _loginWithGoogle() async {
+ /* Future<void> _loginWithGoogle() async {
     setState(() {
       _isGoogleLoading = true;
       _errorMessage    = '';

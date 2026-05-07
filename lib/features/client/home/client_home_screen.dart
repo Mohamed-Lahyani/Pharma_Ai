@@ -8,7 +8,7 @@ import 'package:pharma_ai/features/client/profile/profile_screen.dart';
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
 import 'package:pharma_ai/features/client/barcode/barcode_scanner_screen.dart';
-
+import 'package:pharma_ai/features/client/medications/medications_client_screen.dart';
 class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({super.key});
 
@@ -195,14 +195,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         IconButton(
           icon: const Icon(Icons.notifications_outlined,
               color: Colors.white),
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.notifications),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
+          tooltip: l10n.myReminders,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ReminderScreen(),
+            ),
+          ),
         ),
         IconButton(
           icon: const Icon(Icons.logout, color: Colors.white),
@@ -451,7 +450,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         icone      : Icons.medication_outlined,
         couleur    : _couleurSarcelle,
         description: l10n.searchMedication,
-        onTap      : () => _showComingSoon(l10n.medications),
+        onTap      : () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MedicationsClientScreen()),
+        ),
       ),
       _ActionItem(
         titre      : l10n.myProfile,

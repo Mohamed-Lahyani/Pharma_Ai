@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ── Localisation Flutter ───────────────────────────────────────
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
+import 'package:pharma_ai/test_sound_vibration.dart';
 
 import 'firebase_options.dart';
 
@@ -66,6 +67,8 @@ class MyApp extends ConsumerWidget {
       title                     : 'PharmaAI',
       debugShowCheckedModeBanner: false,
 
+      // Temporairement dans main.dart, remplace home: par :
+      home: const TestSoundVibrationScreen(),
       // ── Thèmes ───────────────────────────────────────────────
       theme     : AppTheme.lightTheme,
       darkTheme : AppTheme.darkTheme,
