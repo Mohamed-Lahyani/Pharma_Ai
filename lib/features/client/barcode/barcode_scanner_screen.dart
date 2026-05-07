@@ -6,6 +6,8 @@ import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
 import 'dart:io';
+import 'package:pharma_ai/core/services/vibration_service.dart';
+import 'package:pharma_ai/core/services/sound_service.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // BarcodeScannerScreen — Scanner code-barres médicament (ML Kit)
@@ -69,6 +71,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
 
   // ── Torche ────────────────────────────────────────────────
   bool _torche = false;
+  final _vibration = VibrationService();
+  final _sound     = SoundService();
 
   @override
   void initState() {
@@ -180,6 +184,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
 
       // Code trouvé → arrêter le flux et chercher dans Firestore
       await _cameraController?.stopImageStream();
+      await _vibration.scanFeedback();
+      await _sound.playScanBeep();
 
       if (mounted) {
         setState(() {
@@ -248,13 +254,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
 
       if (query.docs.isEmpty) {
         // Code-barres non référencé dans la base
+        await _vibration.error();
+        await _sound.playError();
         setState(() => _etape = 'notFound');
       } else {
         // Médicament trouvé
         final doc  = query.docs.first;
         final data = doc.data();
         data['id'] = doc.id;
-
+        await _vibration.success();
+        await _sound.playSuccess();
         setState(() {
           _medicamentTrouve = data;
           _etape            = 'found';
@@ -262,6 +271,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       }
     } catch (e) {
       if (mounted) {
+        await _vibration.error();
+        await _sound.playError();
         setState(() {
           _erreur = 'Erreur recherche : $e';
           _etape  = 'error';

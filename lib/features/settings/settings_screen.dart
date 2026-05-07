@@ -4,8 +4,35 @@ import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../core/l10n/language_provider.dart';
+import '../../core/services/sound_service.dart';
+import '../../core/services/vibration_service.dart';
 
 final notificationsEnabledProvider = StateProvider<bool>((ref) => true);
+
+// ── Providers Son & Vibration ────────────────────────────────
+final soundEnabledProvider = StateNotifierProvider<_BoolNotifier, bool>(
+      (ref) => _BoolNotifier(
+    initialValue: SoundService().isSoundEnabled,
+    onChanged: (v) => SoundService().setSoundEnabled(v),
+  ),
+);
+
+final vibrationEnabledProvider = StateNotifierProvider<_BoolNotifier, bool>(
+      (ref) => _BoolNotifier(
+    initialValue: VibrationService().isVibrationEnabled,
+    onChanged: (v) => VibrationService().setVibrationEnabled(v),
+  ),
+);
+
+class _BoolNotifier extends StateNotifier<bool> {
+  final Future<void> Function(bool) onChanged;
+  _BoolNotifier({required bool initialValue, required this.onChanged})
+      : super(initialValue);
+  Future<void> set(bool value) async {
+    state = value;
+    await onChanged(value);
+  }
+}
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -17,6 +44,8 @@ class SettingsScreen extends ConsumerWidget {
     final currentLang  = ref.watch(languageProvider);
     final langNotif    = ref.read(languageProvider.notifier);
     final notifEnabled = ref.watch(notificationsEnabledProvider);
+    final soundEnabled     = ref.watch(soundEnabledProvider);
+    final vibrationEnabled = ref.watch(vibrationEnabledProvider);
 
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme   = Theme.of(context).textTheme;
@@ -192,7 +221,125 @@ class SettingsScreen extends ConsumerWidget {
 
           const SizedBox(height: 28),
 
-          // ── SECTION 4 : À propos ────────────────────────────
+          // ── SECTION 4 : Son & Vibration ─────────────────────
+          _SectionTitle(
+            icon : Icons.volume_up_outlined,
+            label: 'Son & Vibration',
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: 8),
+
+          Card(
+            child: Column(
+              children: [
+
+                // ── Son ──────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width : 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color       : Colors.blue.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          soundEnabled
+                              ? Icons.volume_up_rounded
+                              : Icons.volume_off_rounded,
+                          color: Colors.blue,
+                          size : 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Sons',
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Bips scan, succès, erreurs',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value    : soundEnabled,
+                        onChanged: (val) =>
+                            ref.read(soundEnabledProvider.notifier).set(val),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 1, indent: 56),
+
+                // ── Vibration ────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width : 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color       : AppTheme.green.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          vibrationEnabled
+                              ? Icons.vibration_rounded
+                              : Icons.phonelink_erase_rounded,
+                          color: AppTheme.green,
+                          size : 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Vibrations',
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Retour haptique lors des actions',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value    : vibrationEnabled,
+                        onChanged: (val) =>
+                            ref.read(vibrationEnabledProvider.notifier).set(val),
+                      ),
+                    ],
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // ── SECTION 5 : À propos ────────────────────────────
           _SectionTitle(
             icon : Icons.info_outline_rounded,
             label: l10n.about,

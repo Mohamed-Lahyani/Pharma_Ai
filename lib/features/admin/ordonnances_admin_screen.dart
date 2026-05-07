@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
+import 'package:pharma_ai/core/services/sound_service.dart';
+import 'package:pharma_ai/core/services/vibration_service.dart';
 import 'package:pharma_ai/shared/widgets/custom_button.dart';
 import 'package:pharma_ai/shared/widgets/custom_card.dart';
 import 'package:pharma_ai/shared/widgets/status_badge.dart';
@@ -30,6 +32,10 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
   static const Color _vert  = Color(0xFF2E7D32);
   static const Color _ambre = Color(0xFFF9A825);
   static const Color _rouge = Color(0xFFC62828);
+
+  // ── Services son & vibration ───────────────────────────────
+  final _sound     = SoundService();
+  final _vibration = VibrationService();
 
   // Filtre actuel
   String _filtre = 'tous';
@@ -504,9 +510,12 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
 
       if (mounted) {
         LoadingOverlay.hide(context);
+        // 🔊 Feedback validation réussie
+        await Future.wait([_sound.playValidation(), _vibration.doubleVibrate()]);
         _showSnack('✅ Ordonnance validée avec succès', _vert);
       }
     } catch (e) {
+      await Future.wait([_sound.playError(), _vibration.error()]);
       if (mounted) {
         LoadingOverlay.hide(context);
         _showSnack('Erreur : $e', _rouge);
@@ -608,11 +617,14 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
 
       if (mounted) {
         LoadingOverlay.hide(context);
+        // 🔊 Feedback rejet
+        await Future.wait([_sound.playError(), _vibration.error()]);
         _showSnack('❌ Ordonnance rejetée', _rouge);
       }
     } catch (e) {
       if (mounted) {
         LoadingOverlay.hide(context);
+        await Future.wait([_sound.playError(), _vibration.error()]);
         _showSnack('Erreur : $e', _rouge);
       }
     }
@@ -632,9 +644,11 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
         'motifRejet' : '',
       });
       if (mounted) {
+        await Future.wait([_sound.playNotification(), _vibration.light()]);
         _showSnack('🔄 Remis en attente', _ambre);
       }
     } catch (e) {
+      await Future.wait([_sound.playError(), _vibration.error()]);
       if (mounted) _showSnack('Erreur : $e', _rouge);
     }
   }

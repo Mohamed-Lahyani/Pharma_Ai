@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_ai/core/l10n/app_localizations.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
-
+import 'package:pharma_ai/core/services/vibration_service.dart';
+import 'package:pharma_ai/core/services/sound_service.dart';
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -24,7 +25,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _nameController  = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
-
+  final _vibration = VibrationService();
+  final _sound     = SoundService();
   bool   _isLoading  = true;
   bool   _isSaving   = false;
   bool   _isEditMode = false;
@@ -79,7 +81,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // ✅ Validation échouée
+      await _vibration.error();
+      await _sound.playError();
+      return;
+    }
     setState(() => _isSaving = true);
 
     try {
@@ -92,7 +99,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         'updatedAt': FieldValue.serverTimestamp(),
       });
       await user.updateDisplayName(_nameController.text.trim());
-
+      await _vibration.success();
+      await _sound.playSuccess();
       setState(() {
         _isSaving   = false;
         _isEditMode = false;
@@ -100,6 +108,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final l10n = AppLocalizations.of(context)!;
       _showSnackBar(l10n.profileUpdated);
     } catch (e) {
+      await _vibration.error();
+      await _sound.playError();
       setState(() => _isSaving = false);
       _showSnackBar('Erreur lors de la sauvegarde', isError: true);
     }
@@ -206,17 +216,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 if (currentPwdCtrl.text.isEmpty ||
                     newPwdCtrl.text.isEmpty     ||
                     confirmPwdCtrl.text.isEmpty) {
+                  await _vibration.error();
+                  await _sound.playError();
                   _showSnackBar('Veuillez remplir tous les champs',
                       isError: true);
                   return;
                 }
                 if (newPwdCtrl.text.length < 6) {
+                  await _vibration.error();
+                  await _sound.playError();
                   _showSnackBar(
                       'Le nouveau mot de passe doit avoir au moins 6 caractères',
                       isError: true);
                   return;
                 }
                 if (newPwdCtrl.text != confirmPwdCtrl.text) {
+                  await _vibration.error();
+                  await _sound.playError();
                   _showSnackBar(
                       'Les mots de passe ne correspondent pas',
                       isError: true);
@@ -230,9 +246,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   );
                   await user.reauthenticateWithCredential(credential);
                   await user.updatePassword(newPwdCtrl.text);
+                  await _vibration.success();
+                  await _sound.playSuccess();
+
                   if (ctx.mounted) Navigator.pop(ctx);
                   _showSnackBar('Mot de passe changé avec succès ✓');
                 } on FirebaseAuthException catch (e) {
+                  await _vibration.error();
+                  await _sound.playError();
                   _showSnackBar(
                     e.code == 'wrong-password'
                         ? 'Mot de passe actuel incorrect'
