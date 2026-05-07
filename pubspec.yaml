@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  flutter_timezone: ^3.0.0
   # ML Kit
   google_mlkit_text_recognition: ^0.13.0
   google_mlkit_barcode_scanning: ^0.12.0
@@ -57,9 +57,9 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
-  #assets:
-    #- assets/sounds/success.mp3
-    #- assets/sounds/error.mp3
-    #- assets/sounds/scan_beep.mp3
-    #- assets/sounds/validation.mp3
-    #- assets/sounds/notification.mp3
+  assets:
+    - assets/sounds/success.mp3
+    - assets/sounds/error.mp3
+    - assets/sounds/scan_beep.mp3
+    - assets/sounds/validation.mp3
+    - assets/sounds/notification.mp3

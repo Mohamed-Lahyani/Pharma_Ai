@@ -1,11 +1,12 @@
 // lib/core/services/vibration_service.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ← Ajout pour HapticFeedback fallback
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 
 class VibrationService {
-  // ── Singleton ───────────────────────────────────────────────
+  // ── Singleton ─────────────────────────────────────────────────
   static final VibrationService _instance = VibrationService._internal();
   factory VibrationService() => _instance;
   VibrationService._internal();
@@ -14,6 +15,7 @@ class VibrationService {
 
   bool _vibrationEnabled = true;
   bool _hasVibrator      = false;
+  bool _hasAmplitudeControl = false; // ← Nouveau : certains Android ne gèrent pas intensities
 
   // ════════════════════════════════════════════════════════════
   // INITIALISATION
@@ -22,14 +24,21 @@ class VibrationService {
   Future<void> init() async {
     await _loadPreferences();
 
-    // ✅ CORRECTION : cast explicite en bool pour éviter le warning
-    final result = await Vibration.hasVibrator();
-    _hasVibrator = result == true;
+    // Vérification vibreur
+    final hasVib = await Vibration.hasVibrator();
+    _hasVibrator = hasVib == true;
+
+    // ✅ CORRECTION : vérifier si l'appareil supporte le contrôle d'amplitude
+    if (_hasVibrator) {
+      final hasAmp = await Vibration.hasAmplitudeControl();
+      _hasAmplitudeControl = hasAmp == true;
+    }
 
     debugPrint(
       '[VibrationService] Initialisé. '
-          'Vibreur disponible : $_hasVibrator | '
-          'Vibration activée : $_vibrationEnabled',
+          'Vibreur : $_hasVibrator | '
+          'Amplitude : $_hasAmplitudeControl | '
+          'Activé : $_vibrationEnabled',
     );
   }
 
@@ -56,10 +65,37 @@ class VibrationService {
   }
 
   // ════════════════════════════════════════════════════════════
-  // MÉTHODE INTERNE
+  // MÉTHODE INTERNE CORRIGÉE
   // ════════════════════════════════════════════════════════════
 
   bool get _canVibrate => _vibrationEnabled && _hasVibrator;
+
+  /// Vibration avec pattern + intensities si supporté, sinon fallback simple
+  Future<void> _vibratePattern({
+    required List<int> pattern,
+    List<int>? intensities,
+    int fallbackDuration = 200,
+  }) async {
+    if (!_canVibrate) return;
+    try {
+      if (_hasAmplitudeControl && intensities != null) {
+        // ✅ Appareil supporte les intensités
+        await Vibration.vibrate(pattern: pattern, intensities: intensities);
+      } else {
+        // ✅ Fallback : pattern sans intensités
+        await Vibration.vibrate(pattern: pattern);
+      }
+    } catch (e) {
+      // ✅ Dernier recours : vibration simple
+      try {
+        await Vibration.vibrate(duration: fallbackDuration);
+      } catch (e2) {
+        // Fallback final via Flutter HapticFeedback (marche même sans plugin)
+        await HapticFeedback.mediumImpact();
+        debugPrint('[VibrationService] Fallback haptique : $e2');
+      }
+    }
+  }
 
   // ════════════════════════════════════════════════════════════
   // PATTERNS DE VIBRATION
@@ -67,60 +103,53 @@ class VibrationService {
 
   /// Vibration légère — feedback simple (appui bouton)
   Future<void> light() async {
-    if (!_canVibrate) return;
+    if (!_canVibrate) {
+      await HapticFeedback.lightImpact(); // fallback si pas de vibreur plugin
+      return;
+    }
     try {
       await Vibration.vibrate(duration: 50);
     } catch (e) {
-      debugPrint('[VibrationService] Erreur vibration légère : $e');
+      await HapticFeedback.lightImpact();
     }
   }
 
   /// Vibration succès — scan réussi, ordonnance envoyée
   Future<void> success() async {
-    if (!_canVibrate) return;
-    try {
-      await Vibration.vibrate(
-        pattern    : [0, 50, 100, 150],
-        intensities: [0, 128, 0, 255],
-      );
-    } catch (e) {
-      await Vibration.vibrate(duration: 200);
-      debugPrint('[VibrationService] Pattern succès non supporté, fallback : $e');
-    }
+    await _vibratePattern(
+      pattern: [0, 50, 100, 150],
+      intensities: [0, 128, 0, 255],
+      fallbackDuration: 200,
+    );
   }
 
   /// Vibration erreur — médicament non trouvé, scan échoué
   Future<void> error() async {
-    if (!_canVibrate) return;
-    try {
-      await Vibration.vibrate(
-        pattern    : [0, 300, 100, 300],
-        intensities: [0, 200, 0, 200],
-      );
-    } catch (e) {
-      await Vibration.vibrate(duration: 500);
-      debugPrint('[VibrationService] Pattern erreur non supporté, fallback : $e');
-    }
+    await _vibratePattern(
+      pattern: [0, 300, 100, 300],
+      intensities: [0, 200, 0, 200],
+      fallbackDuration: 500,
+    );
   }
 
   /// Vibration double — validation ordonnance admin
   Future<void> doubleVibrate() async {
-    if (!_canVibrate) return;
-    try {
-      await Vibration.vibrate(pattern: [0, 100, 80, 100]);
-    } catch (e) {
-      await Vibration.vibrate(duration: 150);
-      debugPrint('[VibrationService] Pattern double non supporté, fallback : $e');
-    }
+    await _vibratePattern(
+      pattern: [0, 100, 80, 100],
+      fallbackDuration: 150,
+    );
   }
 
   /// Vibration scan — bip haptique court lors du scan barcode
   Future<void> scanFeedback() async {
-    if (!_canVibrate) return;
+    if (!_canVibrate) {
+      await HapticFeedback.selectionClick();
+      return;
+    }
     try {
       await Vibration.vibrate(duration: 30);
     } catch (e) {
-      debugPrint('[VibrationService] Erreur vibration scan : $e');
+      await HapticFeedback.selectionClick();
     }
   }
 
@@ -129,7 +158,7 @@ class VibrationService {
     try {
       await Vibration.cancel();
     } catch (e) {
-      debugPrint('[VibrationService] Erreur stop vibration : $e');
+      debugPrint('[VibrationService] Erreur stop : $e');
     }
   }
 }
