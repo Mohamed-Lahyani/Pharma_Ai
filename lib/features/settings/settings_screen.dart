@@ -6,7 +6,7 @@ import '../../core/theme/theme_provider.dart';
 import '../../core/l10n/language_provider.dart';
 import '../../core/services/sound_service.dart';
 import '../../core/services/vibration_service.dart';
-
+import 'package:pharma_ai/core/services/notification_service.dart';
 final notificationsEnabledProvider = StateProvider<bool>((ref) => true);
 
 // ── Providers Son & Vibration ────────────────────────────────
@@ -171,55 +171,72 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 8),
 
           Card(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  Container(
-                    width : 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color       : AppTheme.amber.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.notifications_active_rounded,
-                      color: AppTheme.amber,
-                      size : 20,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.notifications,
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+            child: Column(
+              children: [
+
+                // ── Toggle notifications ──────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width : 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color       : AppTheme.amber.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        Text(
-                          'Rappels médicaments et alertes stock',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.6),
-                          ),
+                        child: const Icon(
+                          Icons.notifications_active_rounded,
+                          color: AppTheme.amber,
+                          size : 20,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.notifications,
+                              style: textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              'Rappels médicaments et alertes stock',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value    : notifEnabled,
+                        onChanged: (val) => ref
+                            .read(notificationsEnabledProvider.notifier)
+                            .state = val,
+                      ),
+                    ],
                   ),
-                  Switch(
-                    value    : notifEnabled,
-                    onChanged: (val) => ref
-                        .read(notificationsEnabledProvider.notifier)
-                        .state = val,
-                  ),
-                ],
-              ),
+                ),
+
+                const Divider(height: 1, indent: 56),
+
+                // ── Test notification immédiate ───────────────
+                _TestNotificationTile(
+                  colorScheme: colorScheme,
+                  textTheme  : textTheme,
+                ),
+
+              ],
             ),
           ),
 
           const SizedBox(height: 28),
+
 
           // ── SECTION 4 : Son & Vibration ─────────────────────
           _SectionTitle(
@@ -338,6 +355,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
 
           const SizedBox(height: 28),
+
 
           // ── SECTION 5 : À propos ────────────────────────────
           _SectionTitle(
@@ -546,6 +564,151 @@ class _LanguageOption extends StatelessWidget {
           ? Icon(Icons.check_circle_rounded, color: colorScheme.primary)
           : Icon(Icons.radio_button_unchecked_rounded,
           color: colorScheme.onSurface.withValues(alpha: 0.3)),
+    );
+  }
+}
+class _TestNotificationTile extends StatefulWidget {
+  final ColorScheme colorScheme;
+  final TextTheme   textTheme;
+
+  const _TestNotificationTile({
+    required this.colorScheme,
+    required this.textTheme,
+  });
+
+  @override
+  State<_TestNotificationTile> createState() => _TestNotificationTileState();
+}
+
+class _TestNotificationTileState extends State<_TestNotificationTile> {
+  bool _isSending = false;
+
+  Future<void> _envoyerTestNotification() async {
+    if (_isSending) return;
+    setState(() => _isSending = true);
+
+    try {
+      // ✅ Son + vibration au moment du test
+      await Future.wait([
+        SoundService().playNotification(),
+        VibrationService().doubleVibrate(),
+      ]);
+
+      // ✅ Notification locale immédiate (dans 3 secondes)
+      await NotificationService().scheduleTestNotification(
+        id     : 9999,
+        titre  : '🔔 Test PharmaAI',
+        message: 'Votre rappel de médicament fonctionne correctement !',
+        delaySeconds: 3,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Notification test envoyée dans 3 secondes'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF2E7D32),
+          behavior       : SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: const Color(0xFFC62828),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── En-tête ────────────────────────────────────────
+          Row(
+            children: [
+              Container(
+                width : 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9A825).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.notifications_active_rounded,
+                  color: Color(0xFFF9A825),
+                  size : 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Test de notification',
+                      style: widget.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      'Envoyer un rappel immédiat de test',
+                      style: widget.textTheme.bodySmall?.copyWith(
+                        color: widget.colorScheme.onSurface
+                            .withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Bouton test ────────────────────────────────────
+          SizedBox(
+            width : double.infinity,
+            height: 44,
+            child : ElevatedButton.icon(
+              onPressed: _isSending ? null : _envoyerTestNotification,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF9A825),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
+              ),
+              icon : _isSending
+                  ? const SizedBox(
+                width : 16,
+                height: 16,
+                child : CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2),
+              )
+                  : const Icon(Icons.send_rounded, size: 18),
+              label: Text(
+                _isSending ? 'Envoi...' : 'Envoyer un rappel test',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
