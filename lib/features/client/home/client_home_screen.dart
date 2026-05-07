@@ -453,7 +453,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           tooltip: l10n.settings,
           onPressed: () => Navigator.pushNamed(context, '/settings'),
         ),
-        IconButton(
+      /*  IconButton(
           icon: const Icon(Icons.notifications_outlined, color: Colors.white),
           tooltip: l10n.myReminders,
           onPressed: () => Navigator.push(context,
@@ -462,7 +462,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         IconButton(
           icon: const Icon(Icons.logout, color: Colors.white),
           onPressed: _logout,
-        ),
+        ),*/
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(

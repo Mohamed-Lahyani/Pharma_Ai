@@ -7,6 +7,7 @@ import '../../core/l10n/language_provider.dart';
 import '../../core/services/sound_service.dart';
 import '../../core/services/vibration_service.dart';
 import 'package:pharma_ai/core/services/notification_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 final notificationsEnabledProvider = StateProvider<bool>((ref) => true);
 
 // ── Providers Son & Vibration ────────────────────────────────
@@ -422,6 +423,10 @@ class SettingsScreen extends ConsumerWidget {
           ),
 
           const SizedBox(height: 40),
+          // ── Déconnexion ─────────────────────────────────────
+          _LogoutTile(),
+
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -708,6 +713,143 @@ class _TestNotificationTileState extends State<_TestNotificationTile> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+class _LogoutTile extends ConsumerStatefulWidget {
+  const _LogoutTile();
+
+  @override
+  ConsumerState<_LogoutTile> createState() => _LogoutTileState();
+}
+
+class _LogoutTileState extends ConsumerState<_LogoutTile> {
+  static const Color _rouge = Color(0xFFC62828);
+  bool _isLoading = false;
+
+  Future<void> _confirmerDeconnexion() async {
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.logout, color: Color(0xFFC62828)),
+            SizedBox(width: 8),
+            Text(
+              'Déconnexion',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Êtes-vous sûr de vouloir vous déconnecter ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _rouge,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Se déconnecter',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirme != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur : $e'),
+            backgroundColor: _rouge,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap     : _isLoading ? null : _confirmerDeconnexion,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              // ── Icône ──────────────────────────────────────
+              Container(
+                width : 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color       : _rouge.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: _isLoading
+                    ? const Padding(
+                  padding: EdgeInsets.all(10),
+                  child  : CircularProgressIndicator(
+                      color: _rouge, strokeWidth: 2),
+                )
+                    : const Icon(Icons.logout, color: _rouge, size: 20),
+              ),
+              const SizedBox(width: 14),
+
+              // ── Texte ──────────────────────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Se déconnecter',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color     : _rouge,
+                      ),
+                    ),
+                    Text(
+                      'Fermer la session en cours',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Flèche ─────────────────────────────────────
+              Icon(
+                Icons.chevron_right_rounded,
+                color: _rouge.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
