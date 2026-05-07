@@ -1,5 +1,3 @@
-// lib/features/client/barcode/barcode_scanner_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
@@ -9,17 +7,6 @@ import 'dart:io';
 import 'package:pharma_ai/core/services/vibration_service.dart';
 import 'package:pharma_ai/core/services/sound_service.dart';
 
-// ═══════════════════════════════════════════════════════════════
-// BarcodeScannerScreen — Scanner code-barres médicament (ML Kit)
-//
-// Fonctionnement :
-//   1. La caméra s'ouvre en temps réel (flux CameraImage)
-//   2. ML Kit détecte le code-barres frame par frame
-//   3. Dès qu'un code est détecté → on cherche dans Firestore
-//      par le champ `barcode` de la collection `medications`
-//   4. On affiche une fiche médicament (nom, prix, stock, catégorie)
-//   5. Le client peut rescanner ou retourner à l'accueil
-// ═══════════════════════════════════════════════════════════════
 
 class BarcodeScannerScreen extends StatefulWidget {
   const BarcodeScannerScreen({super.key});
@@ -30,20 +17,12 @@ class BarcodeScannerScreen extends StatefulWidget {
 
 class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     with WidgetsBindingObserver {
-  // ── Couleurs sémantiques (conservées fixes) ────────────────
   static const Color green = Color(0xFF2E7D32);
   static const Color amber = Color(0xFFF9A825);
   static const Color red   = Color(0xFFC62828);
 
-  // ── État de l'écran ────────────────────────────────────────
-  // 'scanning'   → caméra active, recherche en cours
-  // 'searching'  → code détecté, requête Firestore en cours
-  // 'found'      → médicament trouvé dans Firestore
-  // 'notFound'   → code-barres non référencé
-  // 'error'      → erreur caméra ou permission
   String _etape = 'scanning';
 
-  // ── Caméra ────────────────────────────────────────────────
   CameraController? _cameraController;
   List<CameraDescription> _cameras = [];
   bool _cameraInitialisee = false;
@@ -61,15 +40,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     ],
   );
 
-  // ── Contrôle du traitement frame par frame ─────────────────
-  bool _traitement = false; // Évite les doubles traitements simultanés
-
-  // ── Résultat du scan ──────────────────────────────────────
+  bool _traitement = false;
   String _codeDetecte  = '';
   Map<String, dynamic>? _medicamentTrouve;
   String _erreur = '';
-
-  // ── Torche ────────────────────────────────────────────────
   bool _torche = false;
   final _vibration = VibrationService();
   final _sound     = SoundService();
@@ -88,8 +62,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     _barcodeScanner.close();
     super.dispose();
   }
-
-  // ── Gestion cycle de vie (pause/resume de l'app) ──────────
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
@@ -102,9 +74,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // INITIALISATION CAMÉRA
-  // ════════════════════════════════════════════════════════════
   Future<void> _initialiserCamera() async {
     try {
       _cameras = await availableCameras();
@@ -116,7 +85,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         return;
       }
 
-      // Caméra arrière en priorité
       final camera = _cameras.firstWhere(
             (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => _cameras.first,
@@ -136,8 +104,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       if (!mounted) return;
 
       setState(() => _cameraInitialisee = true);
-
-      // Démarrer le flux d'images pour le scan temps réel
       await _cameraController!.startImageStream(_traiterFrame);
     } catch (e) {
       if (mounted) {
@@ -149,23 +115,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // TRAITEMENT FRAME PAR FRAME — ML Kit Barcode
-  // ════════════════════════════════════════════════════════════
   Future<void> _traiterFrame(CameraImage image) async {
-    // Ignorer si déjà en cours de traitement ou si on n'est plus en mode scan
     if (_traitement || _etape != 'scanning') return;
     _traitement = true;
 
     try {
-      // Convertir CameraImage → InputImage pour ML Kit
       final inputImage = _convertirImage(image);
       if (inputImage == null) {
         _traitement = false;
         return;
       }
-
-      // Analyse ML Kit
       final barcodes = await _barcodeScanner.processImage(inputImage);
 
       if (barcodes.isEmpty) {
@@ -173,7 +132,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         return;
       }
 
-      // On prend le premier code-barres valide détecté
       final barcode = barcodes.first;
       final code    = barcode.rawValue ?? '';
 
@@ -181,8 +139,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         _traitement = false;
         return;
       }
-
-      // Code trouvé → arrêter le flux et chercher dans Firestore
       await _cameraController?.stopImageStream();
       await _vibration.scanFeedback();
       await _sound.playScanBeep();
@@ -202,7 +158,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     }
   }
 
-  // ── Convertir CameraImage → InputImage (ML Kit) ───────────
   InputImage? _convertirImage(CameraImage image) {
     try {
       final camera = _cameraController?.description;
@@ -216,7 +171,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       final format = InputImageFormatValue.fromRawValue(image.format.raw);
       if (format == null) return null;
 
-      // Pour Android NV21 — un seul plan
       if (image.planes.isEmpty) return null;
 
       final bytes = image.planes.first.bytes;
@@ -239,9 +193,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // RECHERCHE FIRESTORE par champ `barcode`
-  // ════════════════════════════════════════════════════════════
   Future<void> _rechercherMedicament(String code) async {
     try {
       final query = await FirebaseFirestore.instance
@@ -253,12 +204,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       if (!mounted) return;
 
       if (query.docs.isEmpty) {
-        // Code-barres non référencé dans la base
         await _vibration.error();
         await _sound.playError();
         setState(() => _etape = 'notFound');
       } else {
-        // Médicament trouvé
         final doc  = query.docs.first;
         final data = doc.data();
         data['id'] = doc.id;
@@ -280,10 +229,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       }
     }
   }
-
-  // ════════════════════════════════════════════════════════════
-  // RESCANNER — réinitialiser et relancer le flux
-  // ════════════════════════════════════════════════════════════
   Future<void> _rescanner() async {
     setState(() {
       _etape            = 'scanning';
@@ -294,19 +239,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     });
 
     try {
-      // Relancer le flux si la caméra est initialisée
       if (_cameraController != null &&
           _cameraController!.value.isInitialized &&
           !_cameraController!.value.isStreamingImages) {
         await _cameraController!.startImageStream(_traiterFrame);
       }
     } catch (e) {
-      // Si le flux ne peut pas redémarrer → réinitialiser la caméra
       await _initialiserCamera();
     }
   }
 
-  // ── Toggle torche ──────────────────────────────────────────
   Future<void> _toggleTorche() async {
     try {
       _torche = !_torche;
@@ -319,9 +261,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // BUILD PRINCIPAL
-  // ════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
@@ -337,7 +276,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
-          // Bouton torche (visible uniquement en mode scan)
           if (_etape == 'scanning' && _cameraInitialisee)
             IconButton(
               icon: Icon(
@@ -371,9 +309,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : scanning — Caméra active + viseur
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeScanning() {
     if (!_cameraInitialisee || _cameraController == null) {
       return const Center(
@@ -396,16 +331,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       key: const ValueKey('scanning'),
       fit: StackFit.expand,
       children: [
-        // ── Prévisualisation caméra ────────────────────────
         CameraPreview(_cameraController!),
-
-        // ── Overlay sombre autour du viseur ───────────────
         _buildOverlaySombre(),
-
-        // ── Viseur animé ──────────────────────────────────
         Center(child: _buildViseur()),
-
-        // ── Instructions bas d'écran ───────────────────────
         Positioned(
           bottom: 0,
           left: 0,
@@ -415,15 +343,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       ],
     );
   }
-
-  // ── Overlay sombre avec découpe centrale ──────────────────
   Widget _buildOverlaySombre() {
     return CustomPaint(
       painter: _OverlayScannerPainter(),
     );
   }
-
-  // ── Viseur avec coins animés ───────────────────────────────
   Widget _buildViseur() {
     const double taille   = 260;
     const double epaisseur = 4;
@@ -435,31 +359,26 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       height: taille,
       child: Stack(
         children: [
-          // Coin haut-gauche
           Positioned(
             top: 0, left: 0,
             child: _buildCoin(couleurCoin, epaisseur, longueur,
                 borderTop: true, borderLeft: true),
           ),
-          // Coin haut-droit
           Positioned(
             top: 0, right: 0,
             child: _buildCoin(couleurCoin, epaisseur, longueur,
                 borderTop: true, borderRight: true),
           ),
-          // Coin bas-gauche
           Positioned(
             bottom: 0, left: 0,
             child: _buildCoin(couleurCoin, epaisseur, longueur,
                 borderBottom: true, borderLeft: true),
           ),
-          // Coin bas-droit
           Positioned(
             bottom: 0, right: 0,
             child: _buildCoin(couleurCoin, epaisseur, longueur,
                 borderBottom: true, borderRight: true),
           ),
-          // Ligne de scan animée
           const _LigneScanAnimee(),
         ],
       ),
@@ -487,7 +406,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     );
   }
 
-  // ── Bandeau d'instructions en bas ─────────────────────────
   Widget _buildBandeauInstructions() {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
@@ -528,9 +446,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : searching — Recherche Firestore en cours
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeSearching() {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -593,9 +508,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : found — Fiche médicament trouvé
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeFound() {
     final primary = Theme.of(context).colorScheme.primary;
     final med     = _medicamentTrouve!;
@@ -606,7 +518,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     final String description = med['description'] ?? '';
     final String categorie   = med['category']    ?? '';
 
-    // Conversion Timestamp Firestore → String lisible
     String expiry = '';
     final expiryRaw = med['expiryDate'];
     if (expiryRaw != null) {
@@ -630,7 +541,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Bannière succès ────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -680,7 +590,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
 
             const SizedBox(height: 20),
 
-            // ── Fiche médicament ───────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -698,7 +607,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Icône + nom
                   Row(
                     children: [
                       Container(
@@ -745,7 +653,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                   Divider(color: AppColors.border(context)),
                   const SizedBox(height: 16),
 
-                  // Prix + Stock côte à côte
                   Row(
                     children: [
                       Expanded(
@@ -770,7 +677,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                     ],
                   ),
 
-                  // Alerte stock critique
                   if (stockCritique) ...[
                     const SizedBox(height: 12),
                     Container(
@@ -847,7 +753,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
 
             const SizedBox(height: 24),
 
-            // ── Bouton Rescanner ───────────────────────────
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -896,7 +801,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     );
   }
 
-  // ── Tuile info (prix / stock) ──────────────────────────────
   Widget _buildInfoTuile({
     required String   label,
     required String   valeur,
@@ -941,9 +845,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : notFound — Code-barres non référencé
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeNotFound() {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -1050,9 +951,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : error — Erreur caméra ou permission
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeError() {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -1132,9 +1030,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PAINTER — Overlay sombre avec découpe centrale transparente
-// ═══════════════════════════════════════════════════════════════
 class _OverlayScannerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -1145,7 +1040,6 @@ class _OverlayScannerPainter extends CustomPainter {
     final double top    = (size.height - taille) / 2;
     final Rect   decoupe = Rect.fromLTWH(left, top, taille, taille);
 
-    // Zone sombre complète moins la découpe centrale
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(RRect.fromRectAndRadius(decoupe, const Radius.circular(12)))
@@ -1158,9 +1052,6 @@ class _OverlayScannerPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// WIDGET — Ligne de scan animée dans le viseur
-// ═══════════════════════════════════════════════════════════════
 class _LigneScanAnimee extends StatefulWidget {
   const _LigneScanAnimee();
 

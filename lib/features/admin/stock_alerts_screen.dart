@@ -6,16 +6,6 @@ import 'package:pharma_ai/shared/widgets/custom_card.dart';
 import 'package:pharma_ai/shared/widgets/status_badge.dart';
 import 'package:pharma_ai/shared/widgets/loading_overlay.dart';
 
-// ═══════════════════════════════════════════════════════════════
-// StockAlertsScreen — Alertes stock critique (Admin)
-//
-// L'admin peut :
-//   - Voir tous les médicaments avec stock < 5
-//   - Voir les médicaments en rupture (stock = 0)
-//   - Réapprovisionner directement depuis cet écran
-//   - Filtrer : tous / rupture / stock bas
-//   - Voir le niveau de stock avec barre de progression
-// ═══════════════════════════════════════════════════════════════
 
 class StockAlertsScreen extends StatefulWidget {
   const StockAlertsScreen({super.key});
@@ -25,18 +15,12 @@ class StockAlertsScreen extends StatefulWidget {
 }
 
 class _StockAlertsScreenState extends State<StockAlertsScreen> {
-  // ── Couleurs sémantiques fixes ─────────────────────────────
   static const Color _vert  = Color(0xFF2E7D32);
   static const Color _ambre = Color(0xFFF9A825);
   static const Color _rouge = Color(0xFFC62828);
 
-  // Seuil stock critique
   static const int _seuilCritique = 5;
-
-  // Filtre actuel
   String _filtre = 'tous';
-
-  // Contrôleur quantité réapprovisionnement
   final TextEditingController _qteController = TextEditingController();
 
   @override
@@ -66,20 +50,14 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
       ),
       body: Column(
         children: [
-          // ── Bandeau résumé ────────────────────────────────
           _buildBandeauResume(),
-          // ── Filtres ───────────────────────────────────────
           _buildFiltreBar(),
-          // ── Liste ─────────────────────────────────────────
           Expanded(child: _buildListe()),
         ],
       ),
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Compteur badge dans l'AppBar
-  // ════════════════════════════════════════════════════════════
   Widget _buildCompteurAlertes() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -108,9 +86,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Bandeau résumé — rupture vs stock bas
-  // ════════════════════════════════════════════════════════════
   Widget _buildBandeauResume() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -208,9 +183,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Barre de filtres
-  // ════════════════════════════════════════════════════════════
   Widget _buildFiltreBar() {
     final filtres = [
       {'label': 'Tous',      'valeur': 'tous',    'couleur': Theme.of(context).colorScheme.primary},
@@ -246,9 +218,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Liste des médicaments en alerte
-  // ════════════════════════════════════════════════════════════
   Widget _buildListe() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -286,7 +255,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
           }).toList();
         }
 
-        // Tri : ruptures en premier
         docs.sort((a, b) {
           final stockA = (a.data() as Map<String, dynamic>)['stock'] ?? 0;
           final stockB = (b.data() as Map<String, dynamic>)['stock'] ?? 0;
@@ -310,9 +278,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Carte médicament en alerte
-  // ════════════════════════════════════════════════════════════
   Widget _buildCarteMedicament(String docId, Map<String, dynamic> data) {
     final nom      = data['name'] ?? 'Médicament';
     final stock    = (data['stock'] ?? 0) as int;
@@ -322,7 +287,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
     final enRupture  = stock == 0;
     final couleur    = enRupture ? _rouge : _ambre;
 
-    // Pourcentage de la barre (max affiché = seuil critique)
     final double pourcentage =
     stock == 0 ? 0.0 : (stock / _seuilCritique).clamp(0.0, 1.0);
 
@@ -333,10 +297,8 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
       child      : Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Ligne principale ──────────────────────────────
           Row(
             children: [
-              // Icône
               Container(
                 width: 46,
                 height: 46,
@@ -354,7 +316,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
               ),
               const SizedBox(width: 12),
 
-              // Nom + catégorie
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,7 +347,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
 
           const SizedBox(height: 14),
 
-          // ── Barre de stock ────────────────────────────────
           Row(
             children: [
               Text(
@@ -417,7 +377,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
             ),
           ),
 
-          // ── Prix ──────────────────────────────────────────
           if (prix != 0) ...[
             const SizedBox(height: 10),
             Text(
@@ -431,7 +390,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
 
           const SizedBox(height: 14),
 
-          // ── Bouton réapprovisionner ───────────────────────
           CustomButton(
             label      : enRupture
                 ? 'Réapprovisionner (urgence)'
@@ -449,9 +407,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Dialog réapprovisionnement
-  // ════════════════════════════════════════════════════════════
   Future<void> _afficherDialogReapprovisionnement(
       String docId, String nom, int stockActuel) async {
     _qteController.clear();
@@ -463,7 +418,7 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20)),
         title: Text(
-          '📦 Réapprovisionner',
+          ' Réapprovisionner',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: AppColors.onSurface(context),
@@ -473,7 +428,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Info médicament
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -500,7 +454,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Champ quantité
             Text(
               'Quantité à ajouter :',
               style: TextStyle(
@@ -567,7 +520,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
 
     if (confirme != true) return;
 
-    // Validation de la quantité
     final qte = int.tryParse(_qteController.text.trim());
     if (qte == null || qte <= 0) {
       if (mounted) {
@@ -579,7 +531,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
     LoadingOverlay.show(context, message: 'Mise à jour du stock...');
 
     try {
-      // Incrémenter le stock
       await FirebaseFirestore.instance
           .collection('medications')
           .doc(docId)
@@ -590,7 +541,7 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
       if (mounted) {
         LoadingOverlay.hide(context);
         _showSnack(
-          '✅ Stock mis à jour : ${stockActuel + qte} unités',
+          ' Stock mis à jour : ${stockActuel + qte} unités',
           _vert,
         );
       }
@@ -601,10 +552,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
       }
     }
   }
-
-  // ════════════════════════════════════════════════════════════
-  // État vide — aucune alerte
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtatVide() {
     return Center(
       child: Column(
@@ -626,10 +573,10 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
           const SizedBox(height: 20),
           Text(
             _filtre == 'rupture'
-                ? 'Aucune rupture de stock ✅'
+                ? 'Aucune rupture de stock '
                 : _filtre == 'bas'
-                ? 'Aucun stock bas ✅'
-                : 'Tous les stocks sont OK ✅',
+                ? 'Aucun stock bas '
+                : 'Tous les stocks sont OK ',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -650,7 +597,6 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
     );
   }
 
-  // ── Helper snackbar ────────────────────────────────────────
   void _showSnack(String message, Color couleur) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

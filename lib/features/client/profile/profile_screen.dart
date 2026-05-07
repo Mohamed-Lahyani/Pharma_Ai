@@ -14,7 +14,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  // ── Couleurs sémantiques (conservées fixes) ────────────────
   static const Color secondaryColor = Color(0xFF2E7D32);
   static const Color dangerColor    = Color(0xFFC62828);
 
@@ -82,7 +81,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
-      // ✅ Validation échouée
       await _vibration.error();
       await _sound.playError();
       return;
@@ -372,7 +370,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               _buildAvatar(l10n),
               const SizedBox(height: 24),
 
-              // ── Informations personnelles ──────────
               _buildSectionCard(
                 title   : l10n.personalInfo,
                 icon    : Icons.person_outline,
@@ -407,7 +404,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Informations du compte ─────────────
               _buildSectionCard(
                 title   : 'Informations du compte',
                 icon    : Icons.info_outline,
@@ -437,7 +433,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Bouton Sauvegarder ─────────────────
               if (_isEditMode) ...[
                 SizedBox(
                   width : double.infinity,
@@ -468,7 +463,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // ── Sécurité ───────────────────────────
               _buildSectionCard(
                 title   : 'Sécurité',
                 icon    : Icons.security,
@@ -496,7 +490,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Déconnexion ────────────────────────
               SizedBox(
                 width : double.infinity,
                 height: 50,
@@ -516,7 +509,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 32),
 
-              // ── Version ────────────────────────────
               Text('${l10n.appName} v1.0.0',
                   style: TextStyle(
                       color: AppColors.textSecondary(context),
@@ -529,8 +521,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  // ── Avatar ────────────────────────────────────────────────────
-  // Conservé : dégradé branding (primaryColor → 0xFF1976D2)
+
   Widget _buildAvatar(AppLocalizations l10n) {
     final primary = Theme.of(context).colorScheme.primary;
 

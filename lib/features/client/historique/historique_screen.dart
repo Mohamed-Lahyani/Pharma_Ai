@@ -3,11 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pharma_ai/core/theme/app_colors.dart';
 
-// ═══════════════════════════════════════════════════════════════
-// HistoriqueScreen — Historique des ordonnances du client
-// Affiche toutes les ordonnances soumises par le client connecté
-// avec leur statut (en attente / validée / rejetée)
-// ═══════════════════════════════════════════════════════════════
 
 class HistoriqueScreen extends StatefulWidget {
   const HistoriqueScreen({super.key});
@@ -17,28 +12,23 @@ class HistoriqueScreen extends StatefulWidget {
 }
 
 class _HistoriqueScreenState extends State<HistoriqueScreen> {
-  // ✅ Couleurs sémantiques conservées (statut métier — non adaptatives)
   static const Color _couleurVert  = Color(0xFF2E7D32);
   static const Color _couleurAmbre = Color(0xFFF9A825);
   static const Color _couleurRouge = Color(0xFFC62828);
 
-  // Filtre actuel
   String _filtre = 'tous';
 
-  // UID du client connecté
   final String _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ✅ Fond adaptatif
       backgroundColor: AppColors.background(context),
       appBar: AppBar(
         title: const Text(
           'Mes Ordonnances',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        // ✅ AppBar adaptative
         backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
@@ -52,15 +42,11 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Barre de filtres
-  // ════════════════════════════════════════════════════════════
   Widget _buildFiltreBar() {
     final filtres = [
       {
         'label'  : 'Toutes',
         'valeur' : 'tous',
-        // ✅ Couleur primaire récupérée depuis le contexte
         'couleur': Theme.of(context).colorScheme.primary,
       },
       {'label': 'En attente', 'valeur': 'pending',   'couleur': _couleurAmbre},
@@ -69,7 +55,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     ];
 
     return Container(
-      // ✅ Fond barre de filtres adaptatif
       color: AppColors.surface(context),
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       child: SingleChildScrollView(
@@ -86,7 +71,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                 labelStyle: TextStyle(
                   color: estActif
                       ? Colors.white
-                  // ✅ Texte chip non sélectionné adaptatif
                       : AppColors.textSecondary(context),
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
@@ -101,9 +85,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Liste temps réel depuis Firestore
-  // ════════════════════════════════════════════════════════════
   Widget _buildListe() {
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance
         .collection('ordonnances')
@@ -120,7 +101,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
             child: CircularProgressIndicator(
-              // ✅ Couleur primaire adaptative
               color: Theme.of(context).colorScheme.primary,
             ),
           );
@@ -142,7 +122,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
             message: _filtre == 'tous'
                 ? 'Vous n\'avez pas encore soumis d\'ordonnance.'
                 : 'Aucune ordonnance "${_labelFiltre()}".',
-            // ✅ Couleur adaptative pour l'état vide
             couleur: AppColors.textSecondary(context),
           );
         }
@@ -160,9 +139,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Carte d'une ordonnance
-  // ════════════════════════════════════════════════════════════
   Widget _buildCarte(String docId, Map<String, dynamic> data) {
     final statut    = data['status'] ?? 'pending';
     final texte     = data['extractedText'] ?? 'Aucun texte';
@@ -187,12 +163,10 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
-      // ✅ Fond carte adaptatif
       color: AppColors.surface(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          // ✅ .withValues() remplace .withOpacity()
           color: couleurStatut.withValues(alpha: 0.3),
           width: 1.2,
         ),
@@ -203,12 +177,10 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
           dividerColor: Colors.transparent,
         ),
         child: ExpansionTile(
-          // ── En-tête toujours visible ──────────────────
           leading: Container(
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              // ✅ .withValues() remplace .withOpacity()
               color: couleurStatut.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
@@ -226,7 +198,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    // ✅ Texte principal adaptatif
                     color: AppColors.onSurface(context),
                   ),
                 ),
@@ -237,7 +208,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
             padding: const EdgeInsets.only(top: 4),
             child: _badgeStatut(statut),
           ),
-          // ── Contenu déplié ────────────────────────────
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -245,13 +215,11 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Divider(
-                    // ✅ Séparateur adaptatif
                     color: AppColors.border(context),
                   ),
 
-                  // Médicaments détectés
                   if (medicines.isNotEmpty) ...[
-                    _sousTitre(context, '💊 Médicaments détectés'),
+                    _sousTitre(context, ' Médicaments détectés'),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 6,
@@ -264,7 +232,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                               : m.toString(),
                           style: const TextStyle(fontSize: 11),
                         ),
-                        // ✅ .withValues() remplace .withOpacity()
                         backgroundColor: Theme.of(context)
                             .colorScheme
                             .primary
@@ -282,14 +249,12 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                     const SizedBox(height: 12),
                   ],
 
-                  // Texte extrait
-                  _sousTitre(context, '📄 Texte extrait'),
+                  _sousTitre(context, ' Texte extrait'),
                   const SizedBox(height: 6),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      // ✅ Fond zone texte adaptatif
                       color: AppColors.inputFill(context),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
@@ -302,13 +267,11 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         height: 1.6,
-                        // ✅ Texte adaptatif
                         color: AppColors.onSurface(context),
                       ),
                     ),
                   ),
 
-                  // Date de validation si disponible
                   if (validatedAt != null) ...[
                     const SizedBox(height: 12),
                     Row(
@@ -342,9 +305,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Message d'information selon le statut
-  // ════════════════════════════════════════════════════════════
   Widget _buildMessageStatut(String statut) {
     String   message;
     Color    couleur;
@@ -372,7 +332,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        // ✅ .withValues() remplace .withOpacity()
         color: couleur.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: couleur.withValues(alpha: 0.25)),
@@ -396,9 +355,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // État vide (aucune ordonnance)
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtatVide({
     required IconData icone,
     required String   message,
@@ -409,14 +365,12 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icone, size: 72,
-              // ✅ .withValues() remplace .withOpacity()
               color: couleur.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           Text(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
-              // ✅ Texte adaptatif
                 color: AppColors.textSecondary(context),
                 fontSize: 15),
           ),
@@ -425,7 +379,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     );
   }
 
-  // ── Helpers ────────────────────────────────────────────────
 
   Widget _badgeStatut(String statut) {
     final couleur = _couleurStatut(statut);
@@ -435,7 +388,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        // ✅ .withValues() remplace .withOpacity()
         color: couleur.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: couleur.withValues(alpha: 0.3)),
@@ -490,14 +442,12 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     }
   }
 
-  // ✅ context ajouté en paramètre pour accéder au thème
   Widget _sousTitre(BuildContext context, String texte) {
     return Text(
       texte,
       style: TextStyle(
         fontWeight: FontWeight.bold,
         fontSize: 13,
-        // ✅ Couleur texte adaptatif (était Color(0xFF37474F) fixe)
         color: AppColors.onSurface(context),
       ),
     );

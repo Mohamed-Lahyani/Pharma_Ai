@@ -37,73 +37,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
- /* Future<void> _register() async {
-    setState(() => _errorMessage = '');
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-
-    try {
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-        email:    _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-
-      await credential.user!.updateDisplayName(_nameController.text.trim());
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(credential.user!.uid)
-          .set({
-        'uid'      : credential.user!.uid,
-        'name'     : _nameController.text.trim(),
-        'email'    : _emailController.text.trim(),
-        'phone'    : _phoneController.text.trim(),
-        'role'     : 'client',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.accountCreated),
-            // ✅ Couleur succès sémantique conservée
-            backgroundColor: const Color(0xFF2E7D32),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        await FirebaseAuth.instance.signOut();
-        Navigator.pop(context);
-      }
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        switch (e.code) {
-          case 'email-already-in-use':
-            _errorMessage = 'Cet email est déjà utilisé par un autre compte.';
-            break;
-          case 'weak-password':
-            _errorMessage = 'Le mot de passe est trop faible (min. 6 caractères).';
-            break;
-          case 'invalid-email':
-            _errorMessage = 'Adresse email invalide.';
-            break;
-          default:
-            _errorMessage = 'Erreur : ${e.message}';
-        }
-      });
-    } catch (e) {
-      setState(() => _errorMessage = 'Une erreur inattendue est survenue.');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }*/
   Future<void> _register() async {
     setState(() => _errorMessage = '');
 
-    // ── Validation du formulaire ────────────────────────────────
     if (!_formKey.currentState!.validate()) {
-      // ✅ Vibration + son erreur si validation échoue
       await _vibration.error();
       await _sound.playError();
       return;
@@ -133,7 +70,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       if (mounted) {
-        // ✅ Succès inscription — son + vibration
         await _vibration.success();
         await _sound.playSuccess();
 
@@ -150,7 +86,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
 
     } on FirebaseAuthException catch (e) {
-      // ✅ Erreur Firebase — son + vibration
       await _vibration.error();
       await _sound.playError();
 
@@ -177,7 +112,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
     } catch (e) {
-      // ✅ Erreur inattendue — son + vibration
       await _vibration.error();
       await _sound.playError();
 
@@ -193,7 +127,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      // ✅ Fond adaptatif
       backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -205,7 +138,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const SizedBox(height: 40),
 
-                // ── Logo et titre ───────────────────────────────
                 Center(
                   child: Column(
                     children: [
@@ -213,7 +145,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          // ✅ Couleur primaire adaptative
                           color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -229,7 +160,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          // ✅ Couleur primaire adaptative
                           color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
@@ -238,7 +168,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         l10n.createAccount,
                         style: TextStyle(
                           fontSize: 14,
-                          // ✅ Texte secondaire adaptatif
                           color: AppColors.textSecondary(context),
                         ),
                       ),
@@ -248,12 +177,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 40),
 
-                // ── Message d'erreur ────────────────────────────
                 if (_errorMessage.isNotEmpty) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      // ✅ .withValues() remplace .withOpacity() — rouge sémantique conservé
                       color: Colors.red.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
@@ -277,7 +204,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 16),
                 ],
 
-                // ── Nom complet ─────────────────────────────────
                 _buildLabel(context, l10n.fullName),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -285,7 +211,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   textCapitalization: TextCapitalization.words,
                   decoration: _inputDecoration(
                     context,
-                    hint: 'Ex : Ahmed Benali',
+                    hint: 'Enter votre nom',
                     icon: Icons.person_outline,
                   ),
                   validator: (val) {
@@ -301,7 +227,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 20),
 
-                // ── Email ───────────────────────────────────────
                 _buildLabel(context, l10n.email),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -326,7 +251,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 20),
 
-                // ── Téléphone ───────────────────────────────────
                 _buildLabel(context, 'Téléphone (optionnel)'),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -341,7 +265,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 20),
 
-                // ── Mot de passe ────────────────────────────────
                 _buildLabel(context, l10n.password),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -372,7 +295,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 20),
 
-                // ── Confirmer mot de passe ──────────────────────
                 _buildLabel(context, l10n.newPassword),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -403,14 +325,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 24),
 
-                // ── Bouton S'inscrire ───────────────────────────
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
-                      // ✅ Couleur primaire adaptative
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
@@ -431,7 +351,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 20),
 
-                // ── Lien vers Login ─────────────────────────────
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -439,7 +358,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Text(
                         'Vous avez déjà un compte ? ',
                         style: TextStyle(
-                          // ✅ Texte secondaire adaptatif
                           color: AppColors.textSecondary(context),
                         ),
                       ),
@@ -448,7 +366,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: Text(
                           l10n.signIn,
                           style: TextStyle(
-                            // ✅ Couleur primaire adaptative
                             color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
@@ -467,20 +384,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ── Helper : label de champ ───────────────────────────────────
   Widget _buildLabel(BuildContext context, String text) {
     return Text(
       text,
       style: TextStyle(
         fontWeight: FontWeight.w600,
         fontSize: 14,
-        // ✅ Texte principal adaptatif
         color: AppColors.onSurface(context),
       ),
     );
   }
 
-  // ── Helper : décoration de champ ─────────────────────────────
   InputDecoration _inputDecoration(
       BuildContext context, {
         required String hint,
@@ -491,16 +405,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       hintText: hint,
       hintStyle: TextStyle(color: AppColors.textSecondary(context)),
       prefixIcon: Icon(icon,
-          // ✅ Couleur primaire adaptative
           color: Theme.of(context).colorScheme.primary),
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       filled: true,
-      // ✅ Fond input adaptatif
       fillColor: AppColors.inputFill(context),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        // ✅ Bordure adaptative
         borderSide: BorderSide(color: AppColors.border(context)),
       ),
       focusedBorder: OutlineInputBorder(
@@ -510,7 +421,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        // ✅ Rouge sémantique conservé
         borderSide: const BorderSide(color: Colors.red),
       ),
       focusedErrorBorder: OutlineInputBorder(

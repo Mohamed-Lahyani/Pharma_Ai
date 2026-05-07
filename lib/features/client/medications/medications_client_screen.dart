@@ -13,7 +13,6 @@ class MedicationsClientScreen extends StatefulWidget {
 }
 
 class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
-  // ── Couleurs sémantiques ────────────────────────────────────
   static const Color _couleurPrimaire = Color(0xFF1565C0);
   static const Color _couleurWarning  = Color(0xFFF9A825);
   static const Color _couleurDanger   = Color(0xFFC62828);
@@ -21,7 +20,7 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
 
   final TextEditingController _searchController = TextEditingController();
   String  _searchQuery    = '';
-  String? _selectedCategory; // null = toutes les catégories
+  String? _selectedCategory;
 
   @override
   void dispose() {
@@ -29,7 +28,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
     super.dispose();
   }
 
-  // ── Afficher le détail d'un médicament ─────────────────────
   void _showDetail(Map<String, dynamic> data) {
     final int    stock      = data['stock'] ?? 0;
     final bool   isCritical = stock <= 5;
@@ -56,7 +54,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Poignée ──────────────────────────────────────
             Center(
               child: Container(
                 width: 40, height: 4,
@@ -68,7 +65,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
             ),
             const SizedBox(height: 20),
 
-            // ── En-tête ───────────────────────────────────────
             Row(
               children: [
                 Container(
@@ -103,7 +99,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
                     ],
                   ),
                 ),
-                // Badge disponibilité
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
@@ -139,7 +134,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
             Divider(color: AppColors.border(context)),
             const SizedBox(height: 16),
 
-            // ── Infos ─────────────────────────────────────────
             _detailRow(Icons.monetization_on_outlined,
                 'Prix', '${data['price'] ?? 0} DZD'),
             _detailRow(Icons.inventory_2_outlined,
@@ -152,7 +146,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
 
             const SizedBox(height: 24),
 
-            // ── Bouton fermer ─────────────────────────────────
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -223,7 +216,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
       body: Column(
         children: [
 
-          // ── Barre de recherche ──────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
@@ -257,7 +249,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
             ),
           ),
 
-          // ── Liste temps réel ────────────────────────────────
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -275,7 +266,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
                       child: Text('Erreur : ${snapshot.error}'));
                 }
 
-                // ── Filtrage local (nom + catégorie) ──────────
                 final docs = snapshot.data!.docs.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   final name = (data['name'] ?? '').toString().toLowerCase();
@@ -347,7 +337,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
                               horizontal: 16, vertical: 12),
                           child: Row(
                             children: [
-                              // ── Icône ───────────────────────
                               Container(
                                 width: 46, height: 46,
                                 decoration: BoxDecoration(
@@ -373,7 +362,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
                               ),
                               const SizedBox(width: 14),
 
-                              // ── Infos ────────────────────────
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment:
@@ -409,7 +397,6 @@ class _MedicationsClientScreenState extends State<MedicationsClientScreen> {
                                 ),
                               ),
 
-                              // ── Prix + stock ─────────────────
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [

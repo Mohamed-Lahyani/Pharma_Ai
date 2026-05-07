@@ -1,5 +1,3 @@
-// lib/features/client/ocr/ocr_scanner_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
@@ -21,32 +19,22 @@ class OcrScannerScreen extends StatefulWidget {
 }
 
 class _OcrScannerScreenState extends State<OcrScannerScreen> {
-  // ── Couleurs sémantiques (conservées fixes) ────────────────
   static const Color green = Color(0xFF2E7D32);
   static const Color amber = Color(0xFFF9A825);
   static const Color red   = Color(0xFFC62828);
 
-  // ── Services son & vibration ───────────────────────────────
   final _sound     = SoundService();
   final _vibration = VibrationService();
 
-  // ── État de l'écran ────────────────────────────────────────
-  // 'initial'    → page d'accueil (aucune image)
-  // 'processing' → OCR en cours
-  // 'result'     → texte extrait, prêt à envoyer
-  // 'sending'    → envoi Firestore en cours
-  // 'done'       → envoi réussi
   String _etape = 'initial';
 
-  File?        _imageFile;       // Image sélectionnée
-  String       _texteExtrait  = ''; // Texte brut OCR
-  List<String> _medsDetectes = []; // Médicaments détectés
-  String       _erreur = '';     // Message d'erreur éventuel
+  File?        _imageFile;
+  String       _texteExtrait  = '';
+  List<String> _medsDetectes = [];
+  String       _erreur = '';
 
-  // ── Contrôleur du texte (éditable par l'utilisateur) ──────
   final TextEditingController _texteController = TextEditingController();
 
-  // ── Mots-clés pour détecter les médicaments dans le texte ─
   static const List<String> _motsClesMedicaments = [
     'mg', 'ml', 'cp', 'gel', 'comp', 'gél', 'sirop', 'injectable',
     'solution', 'pommade', 'crème', 'patch', 'suppositoire',
@@ -61,9 +49,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     super.dispose();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE 1 — Prendre une photo avec la caméra
-  // ════════════════════════════════════════════════════════════
   Future<void> _prendrePhoto() async {
     try {
       final picker = ImagePicker();
@@ -92,9 +77,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE 1 (bis) — Importer depuis la galerie
-  // ════════════════════════════════════════════════════════════
   Future<void> _importerGalerie() async {
     try {
       final picker = ImagePicker();
@@ -123,9 +105,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE 2 — Extraire le texte avec ML Kit OCR
-  // ════════════════════════════════════════════════════════════
   Future<void> _extraireTexte() async {
     if (_imageFile == null) return;
 
@@ -175,9 +154,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Détecter les médicaments dans le texte extrait
-  // ════════════════════════════════════════════════════════════
+
   List<String> _detecterMedicaments(String texte) {
     final lignes = texte.split('\n');
     final List<String> meds = [];
@@ -198,9 +175,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     return meds.toSet().toList();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE 3 — Envoyer l'ordonnance dans Firestore
-  // ════════════════════════════════════════════════════════════
   Future<void> _envoyerOrdonnance() async {
     final texteEdite = _texteController.text.trim();
     if (texteEdite.isEmpty) {
@@ -238,10 +212,8 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       });
 
       setState(() => _etape = 'done');
-      // 🔊 Feedback succès — ordonnance envoyée
       await Future.wait([_sound.playSuccess(), _vibration.success()]);
     } catch (e) {
-      // 🔊 Feedback erreur — envoi échoué
       await Future.wait([_sound.playError(), _vibration.error()]);
       setState(() {
         _erreur = 'Erreur envoi : $e';
@@ -250,9 +222,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Recommencer (reset complet)
-  // ════════════════════════════════════════════════════════════
   void _recommencer() {
     setState(() {
       _etape         = 'initial';
@@ -264,9 +233,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     });
   }
 
-  // ════════════════════════════════════════════════════════════
-  // BUILD PRINCIPAL
-  // ════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -302,9 +268,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : initial — Choix de la source image
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeInitial() {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -315,7 +278,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
         children: [
           const SizedBox(height: 20),
 
-          // Illustration centrale
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(32),
@@ -372,7 +334,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
 
           const SizedBox(height: 32),
 
-          // Bouton : Prendre une photo
           _buildBoutonAction(
             label: 'Prendre une photo',
             sousTitre: 'Utiliser l\'appareil photo',
@@ -383,7 +344,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
 
           const SizedBox(height: 14),
 
-          // Bouton : Importer depuis la galerie
           _buildBoutonAction(
             label: 'Importer depuis la galerie',
             sousTitre: 'Choisir une image existante',
@@ -392,7 +352,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
             onTap: _importerGalerie,
           ),
 
-          // Message d'erreur
           if (_erreur.isNotEmpty) ...[
             const SizedBox(height: 20),
             Container(
@@ -425,9 +384,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : processing — OCR en cours
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeProcessing() {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -467,9 +423,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : result — Texte extrait, vérification avant envoi
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeResult() {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -479,7 +432,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Aperçu image + succès ──────────────────────────
           Row(
             children: [
               if (_imageFile != null)
@@ -533,10 +485,9 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
 
           const SizedBox(height: 20),
 
-          // ── Médicaments détectés ───────────────────────────
           if (_medsDetectes.isNotEmpty) ...[
             _buildSectionTitre(
-              '💊 Médicaments détectés (${_medsDetectes.length})',
+              ' Médicaments détectés (${_medsDetectes.length})',
               couleur: primary,
             ),
             const SizedBox(height: 8),
@@ -585,8 +536,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
             const SizedBox(height: 16),
           ],
 
-          // ── Texte extrait (éditable) ───────────────────────
-          _buildSectionTitre('📄 Texte extrait (modifiable)'),
+          _buildSectionTitre(' Texte extrait (modifiable)'),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
@@ -614,7 +564,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
 
           const SizedBox(height: 24),
 
-          // ── Boutons : Envoyer + Recommencer ───────────────
           SizedBox(
             width: double.infinity,
             height: 52,
@@ -662,9 +611,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : sending — Envoi en cours
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeSending() {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -692,9 +638,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ÉTAPE : done — Succès final
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtapeDone() {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -781,11 +724,7 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Widgets helpers
-  // ════════════════════════════════════════════════════════════
 
-  // Bouton d'action (caméra / galerie)
   Widget _buildBoutonAction({
     required String label,
     required String sousTitre,
@@ -849,7 +788,6 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     );
   }
 
-  // Titre de section
   Widget _buildSectionTitre(String titre, {Color? couleur}) {
     return Text(
       titre,
@@ -861,13 +799,12 @@ class _OcrScannerScreenState extends State<OcrScannerScreen> {
     );
   }
 
-  // Conseils pour une bonne photo
   Widget _buildConseils() {
     final conseils = [
-      '📸  Bonne luminosité, pas de reflet',
-      '📄  Ordonnance à plat, bien cadrée',
-      '🔍  Texte net et lisible',
-      '✂️  Évitez de couper les bords',
+      ' Bonne luminosité, pas de reflet',
+      ' Ordonnance à plat, bien cadrée',
+      ' Texte net et lisible',
+      ' Évitez de couper les bords',
     ];
 
     return Container(
