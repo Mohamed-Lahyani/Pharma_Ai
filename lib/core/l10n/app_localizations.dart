@@ -131,7 +131,6 @@ abstract class AppLocalizations {
   String get settings;
 
   /// No description provided for @signOut.
-  ///
   /// In fr, this message translates to:
   /// **'Déconnexion'**
   String get signOut;
