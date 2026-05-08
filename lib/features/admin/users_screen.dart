@@ -4,15 +4,6 @@ import 'package:pharma_ai/core/theme/app_colors.dart';
 import 'package:pharma_ai/shared/widgets/custom_card.dart';
 import 'package:pharma_ai/shared/widgets/status_badge.dart';
 
-// ═══════════════════════════════════════════════════════════════
-// UsersScreen — Liste des clients (Admin)
-//
-// L'admin peut :
-//   - Voir tous les clients inscrits
-//   - Rechercher un client par nom ou email
-//   - Voir le détail d'un client (ordonnances + rappels)
-//   - Consulter l'historique complet des ordonnances du client
-// ═══════════════════════════════════════════════════════════════
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -22,12 +13,10 @@ class UsersScreen extends StatefulWidget {
 }
 
 class _UsersScreenState extends State<UsersScreen> {
-  // ── Couleurs sémantiques fixes ─────────────────────────────
   static const Color _vert  = Color(0xFF2E7D32);
   static const Color _ambre = Color(0xFFF9A825);
   static const Color _rouge = Color(0xFFC62828);
 
-  // Recherche
   final TextEditingController _searchController = TextEditingController();
   String _recherche = '';
 
@@ -51,7 +40,6 @@ class _UsersScreenState extends State<UsersScreen> {
         backgroundColor: primary,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
-        // ── Compteur total clients ────────────────────────
         actions: [
           _buildCompteurClients(),
           const SizedBox(width: 8),
@@ -59,18 +47,13 @@ class _UsersScreenState extends State<UsersScreen> {
       ),
       body: Column(
         children: [
-          // ── Barre de recherche ────────────────────────────
           _buildBarreRecherche(),
-          // ── Liste clients ─────────────────────────────────
           Expanded(child: _buildListeClients()),
         ],
       ),
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Compteur badge total clients
-  // ════════════════════════════════════════════════════════════
   Widget _buildCompteurClients() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -99,9 +82,6 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Barre de recherche
-  // ════════════════════════════════════════════════════════════
   Widget _buildBarreRecherche() {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -145,10 +125,6 @@ class _UsersScreenState extends State<UsersScreen> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // Liste des clients en temps réel
-  // ════════════════════════════════════════════════════════════
   Widget _buildListeClients() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -173,7 +149,6 @@ class _UsersScreenState extends State<UsersScreen> {
           );
         }
 
-        // Filtrage local par recherche
         final docs = (snapshot.data?.docs ?? []).where((doc) {
           if (_recherche.isEmpty) return true;
           final data = doc.data() as Map<String, dynamic>;
@@ -199,9 +174,6 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Carte client cliquable → ouvre le détail
-  // ════════════════════════════════════════════════════════════
   Widget _buildCarteClient(String userId, Map<String, dynamic> data) {
     final nom    = data['name'] ?? data['displayName'] ?? 'Client';
     final email  = data['email'] ?? '';
@@ -214,7 +186,6 @@ class _UsersScreenState extends State<UsersScreen> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          // ── Avatar initiale ──────────────────────────────
           Container(
             width: 50,
             height: 50,
@@ -235,7 +206,6 @@ class _UsersScreenState extends State<UsersScreen> {
           ),
           const SizedBox(width: 14),
 
-          // ── Infos client ─────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +227,6 @@ class _UsersScreenState extends State<UsersScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                // Badge rôle + compteur ordonnances
                 Row(
                   children: [
                     StatusBadge.role('client', small: true),
@@ -269,7 +238,6 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
           ),
 
-          // ── Flèche ───────────────────────────────────────
           Icon(
             Icons.arrow_forward_ios,
             size: 14,
@@ -280,7 +248,6 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // ── Compteur ordonnances du client ─────────────────────────
   Widget _buildCompteurOrdonnances(String userId) {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
@@ -301,9 +268,6 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Ouvrir le détail d'un client (bottom sheet)
-  // ════════════════════════════════════════════════════════════
   void _ouvrirDetailClient(String userId, String nom, String email) {
     showModalBottomSheet(
       context: context,
@@ -317,9 +281,6 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // État vide
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtatVide() {
     return Center(
       child: Column(
@@ -347,15 +308,11 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// BOTTOM SHEET — Détail d'un client + historique ordonnances
-// ═══════════════════════════════════════════════════════════════
 class _DetailClientSheet extends StatelessWidget {
   final String userId;
   final String nom;
   final String email;
 
-  // ── Couleurs sémantiques fixes ─────────────────────────────
   static const Color _vert  = Color(0xFF2E7D32);
   static const Color _ambre = Color(0xFFF9A825);
   static const Color _rouge = Color(0xFFC62828);
@@ -382,7 +339,6 @@ class _DetailClientSheet extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // ── Poignée ──────────────────────────────────────
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -395,7 +351,6 @@ class _DetailClientSheet extends StatelessWidget {
               ),
             ),
 
-            // ── En-tête client ───────────────────────────────
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -449,7 +404,6 @@ class _DetailClientSheet extends StatelessWidget {
 
             Divider(color: AppColors.border(context), height: 1),
 
-            // ── Titre historique ─────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Row(
@@ -468,7 +422,6 @@ class _DetailClientSheet extends StatelessWidget {
               ),
             ),
 
-            // ── Liste ordonnances du client ───────────────────
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -539,7 +492,6 @@ class _DetailClientSheet extends StatelessWidget {
     );
   }
 
-  // ── Ligne ordonnance dans l'historique ─────────────────────
   Widget _buildLigneOrdonnance(
       BuildContext context, Map<String, dynamic> data) {
     final statut    = data['status'] ?? 'pending';
@@ -586,7 +538,6 @@ class _DetailClientSheet extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // Infos
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,7 +569,6 @@ class _DetailClientSheet extends StatelessWidget {
             ),
           ),
 
-          // Badge statut
           StatusBadge.ordonnance(statut, small: true),
         ],
       ),

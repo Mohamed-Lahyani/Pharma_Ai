@@ -19,7 +19,6 @@ class OrdonnanceModel {
     this.validatedAt,
   });
 
-  // Convertir Firestore → OrdonnanceModel
   factory OrdonnanceModel.fromMap(Map<String, dynamic> map, String id) {
     return OrdonnanceModel(
       id: id,
@@ -35,7 +34,6 @@ class OrdonnanceModel {
     );
   }
 
-  // Convertir OrdonnanceModel → Firestore
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -48,7 +46,6 @@ class OrdonnanceModel {
     };
   }
 
-  // Couleur selon le statut
   bool get isPending => status == 'pending';
   bool get isValidated => status == 'validated';
   bool get isRejected => status == 'rejected';

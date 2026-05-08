@@ -1,5 +1,3 @@
-// lib/core/services/notification_service.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -7,7 +5,6 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
 class NotificationService {
-  // ── Singleton ───────────────────────────────────────────────
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
@@ -22,9 +19,6 @@ class NotificationService {
   static const String _channelOrdoName     = 'Ordonnances';
   static const String _channelStockName    = 'Alertes stock';
 
-  // ════════════════════════════════════════════════════════════
-  // INITIALISATION
-  // ════════════════════════════════════════════════════════════
 
   Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -55,7 +49,6 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    // Demande la permission au premier lancement
     await checkAndRequestPermission();
 
     debugPrint('[NotificationService] Initialisé avec succès');
@@ -65,21 +58,13 @@ class NotificationService {
     debugPrint('[NotificationService] Notification tapée : ${response.payload}');
   }
 
-  // ════════════════════════════════════════════════════════════
-  // PERMISSION
-  // ════════════════════════════════════════════════════════════
-
   Future<bool> checkAndRequestPermission() async {
     final android = _plugin
-        .resolvePlatformSpecificImplementation<  // ✅ < manquait ici
+        .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     final granted = await android?.requestNotificationsPermission();
     return granted ?? false;
   }
-
-  // ════════════════════════════════════════════════════════════
-  // CANAUX ANDROID
-  // ════════════════════════════════════════════════════════════
 
   AndroidNotificationDetails get _reminderChannel =>
       const AndroidNotificationDetails(
@@ -118,9 +103,6 @@ class NotificationService {
         color: Color(0xFFF9A825),
       );
 
-  // ════════════════════════════════════════════════════════════
-  // NOTIFICATIONS IMMÉDIATES
-  // ════════════════════════════════════════════════════════════
 
   Future<void> showOrdonnanceNotification({
     required int id,
@@ -153,16 +135,13 @@ class NotificationService {
     );
     await _plugin.show(
       id,
-      '⚠️ Stock critique',
+      ' Stock critique',
       '$medicationName : seulement $stock unité(s) restante(s)',
       details,
       payload: 'stock_alert',
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // RAPPELS PLANIFIÉS
-  // ════════════════════════════════════════════════════════════
 
   Future<void> scheduleReminderDaily({
     required int id,
@@ -192,7 +171,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       id,
-      '💊 Rappel médicament',
+      ' Rappel médicament',
       'Il est l\'heure de prendre : $medicationName',
       scheduledDate,
       details,
@@ -229,14 +208,13 @@ class NotificationService {
       hour, minute,
     );
 
-    // Avancer jusqu'à la prochaine occurrence (même jour de semaine)
     while (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
     await _plugin.zonedSchedule(
       id,
-      '💊 Rappel médicament',
+      ' Rappel médicament',
       'Il est l\'heure de prendre : $medicationName',
       scheduledDate,
       details,
@@ -251,9 +229,6 @@ class NotificationService {
         '[NotificationService] Rappel hebdomadaire planifié : $medicationName à $hour:$minute');
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ANNULATION
-  // ════════════════════════════════════════════════════════════
 
   Future<void> cancelReminder(int id) async {
     await _plugin.cancel(id);
@@ -264,10 +239,6 @@ class NotificationService {
     await _plugin.cancelAll();
     debugPrint('[NotificationService] Tous les rappels annulés');
   }
-
-  // ════════════════════════════════════════════════════════════
-  // UTILITAIRES
-  // ════════════════════════════════════════════════════════════
 
   static Map<String, int> parseTime(String timeStr) {
     final parts = timeStr.split(':');
@@ -281,17 +252,13 @@ class NotificationService {
     return firestoreId.hashCode.abs() % 100000;
   }
 
-  // ════════════════════════════════════════════════════════════
-  // RACCOURCIS PRÉDÉFINIS
-  // ════════════════════════════════════════════════════════════
-
   Future<void> notifyOrdonnanceValidee({
     required String ordonnanceId,
     required String medicaments,
   }) async {
     await showOrdonnanceNotification(
       id: generateId(ordonnanceId),
-      title: '✅ Ordonnance validée',
+      title: ' Ordonnance validée',
       body: 'Votre ordonnance a été validée. Médicaments : $medicaments',
       payload: 'ordonnance_$ordonnanceId',
     );
@@ -303,7 +270,7 @@ class NotificationService {
   }) async {
     await showOrdonnanceNotification(
       id: generateId(ordonnanceId),
-      title: '❌ Ordonnance rejetée',
+      title: ' Ordonnance rejetée',
       body: raison.isNotEmpty
           ? 'Votre ordonnance a été rejetée : $raison'
           : 'Votre ordonnance a été rejetée par le pharmacien.',

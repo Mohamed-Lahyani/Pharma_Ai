@@ -7,15 +7,6 @@ import 'package:pharma_ai/core/services/notification_service.dart';
 import 'package:pharma_ai/core/services/sound_service.dart';
 import 'package:pharma_ai/core/services/vibration_service.dart';
 
-// ═══════════════════════════════════════════════════════════════
-// ReminderScreen — Rappels de prise de médicaments
-//
-// Le client peut :
-//   - Voir tous ses rappels actifs/inactifs
-//   - Ajouter un nouveau rappel (médicament + heure + fréquence)
-//   - Activer / désactiver un rappel  ← annule ou replanifie la notif locale
-//   - Supprimer un rappel             ← annule la notif locale
-// ═══════════════════════════════════════════════════════════════
 
 class ReminderScreen extends StatefulWidget {
   const ReminderScreen({super.key});
@@ -25,16 +16,13 @@ class ReminderScreen extends StatefulWidget {
 }
 
 class _ReminderScreenState extends State<ReminderScreen> {
-  // ── Couleurs sémantiques (conservées fixes) ────────────────
+
   static const Color red = Color(0xFFC62828);
 
-  // UID du client connecté
   final String _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  // ── Singleton NotificationService ─────────────────────────
   final NotificationService _notifService = NotificationService();
 
-  // ── Services son & vibration ───────────────────────────────
   final _sound     = SoundService();
   final _vibration = VibrationService();
 
@@ -54,7 +42,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
-      // ── Liste en temps réel ────────────────────────────────
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('reminders')
@@ -88,7 +75,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
           );
         },
       ),
-      // ── Bouton flottant : Ajouter ──────────────────────────
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _ouvrirFormulaire,
         backgroundColor: primary,
@@ -101,9 +87,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Carte d'un rappel
-  // ════════════════════════════════════════════════════════════
   Widget _buildCarteRappel(
       String docId, Map<String, dynamic> data, AppLocalizations l10n) {
     final primary   = Theme.of(context).colorScheme.primary;
@@ -135,10 +118,8 @@ class _ReminderScreenState extends State<ReminderScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Ligne principale : nom + toggle ───────────
               Row(
                 children: [
-                  // Icône médicament
                   Container(
                     width: 46,
                     height: 46,
@@ -200,7 +181,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
                       ],
                     ),
                   ),
-                  // Switch activer/désactiver
                   Switch(
                     value: actif,
                     activeColor: primary,
@@ -211,7 +191,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
               const SizedBox(height: 12),
 
-              // ── Heure du rappel ────────────────────────────
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 10),
@@ -239,7 +218,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
                         letterSpacing: 1,
                       ),
                     ),
-                    // ── Badge notification active ──────────
                     if (actif && frequence != 'asNeeded') ...[
                       const SizedBox(width: 10),
                       Container(
@@ -271,7 +249,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
                 ),
               ),
 
-              // ── Notes ──────────────────────────────────────
               if (notes.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Row(
@@ -295,10 +272,8 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
               const SizedBox(height: 12),
 
-              // ── Boutons : Modifier + Supprimer ─────────────
               Row(
                 children: [
-                  // Modifier
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: Icon(Icons.edit_outlined,
@@ -318,7 +293,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Supprimer
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.delete_outline,
@@ -344,9 +318,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // État vide
-  // ════════════════════════════════════════════════════════════
+
   Widget _buildEtatVide(AppLocalizations l10n) {
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -401,26 +373,20 @@ class _ReminderScreenState extends State<ReminderScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Activer / désactiver un rappel
-  // ────────────────────────────────────────────────────────────
-  // - Si on active  → on (re)planifie la notification locale
-  // - Si on désactive → on annule la notification locale
-  // ════════════════════════════════════════════════════════════
+
   Future<void> _toggleActif(
       String docId, bool nouvelleValeur, Map<String, dynamic> data) async {
     try {
-      // 1. Mettre à jour Firestore
+
       await FirebaseFirestore.instance
           .collection('reminders')
           .doc(docId)
           .update({'active': nouvelleValeur});
 
-      // 2. Gérer la notification locale
       final notifId = NotificationService.generateId(docId);
 
       if (nouvelleValeur) {
-        // Réactiver → replanifier
+
         await _planifierNotification(
           docId      : docId,
           nomMed     : data['medicationName'] ?? '',
@@ -429,7 +395,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
         );
         await Future.wait([_sound.playNotification(), _vibration.doubleVibrate()]);
       } else {
-        // Désactiver → annuler toutes les notifs liées à ce rappel
         await _annulerNotifications(docId, data['frequency'] ?? 'daily');
         await Future.wait([_sound.playNotification(), _vibration.light()]);
 
@@ -448,9 +413,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Supprimer un rappel avec confirmation
-  // ════════════════════════════════════════════════════════════
+
   Future<void> _supprimerRappel(
       String docId, String nom, AppLocalizations l10n) async {
     final confirme = await showDialog<bool>(
@@ -477,23 +440,19 @@ class _ReminderScreenState extends State<ReminderScreen> {
 
     if (confirme == true) {
       try {
-        // 1. Récupérer les données avant suppression pour connaître la fréquence
         final doc = await FirebaseFirestore.instance
             .collection('reminders')
             .doc(docId)
             .get();
         final freq = doc.data()?['frequency'] ?? 'daily';
 
-        // 2. Supprimer de Firestore
         await FirebaseFirestore.instance
             .collection('reminders')
             .doc(docId)
             .delete();
 
-        // 3. Annuler la notification locale
         await _annulerNotifications(docId, freq);
 
-        // 🔊 Feedback destructif — suppression réussie
         await Future.wait([_sound.playError(), _vibration.error()]);
 
         if (mounted) {
@@ -521,9 +480,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Ouvrir le formulaire (ajout ou modification)
-  // ════════════════════════════════════════════════════════════
   void _ouvrirFormulaire({String? docId, Map<String, dynamic>? data}) {
     showModalBottomSheet(
       context: context,
@@ -536,44 +492,32 @@ class _ReminderScreenState extends State<ReminderScreen> {
         docId : docId,
         data  : data,
         onSaved: (String savedDocId, Map<String, dynamic> savedData) async {
-          // Replanifier après création/modification
           await _planifierNotification(
             docId    : savedDocId,
             nomMed   : savedData['medicationName'] ?? '',
             heureStr : savedData['time'] ?? '08:00',
             frequence: savedData['frequency'] ?? 'daily',
           );
-          // 🔊 Feedback succès — rappel sauvegardé
           await Future.wait([_sound.playSuccess(), _vibration.doubleVibrate()]);
         },
       ),
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // LOGIQUE DE PLANIFICATION
-  // ────────────────────────────────────────────────────────────
-  // daily   → 1 notification par jour
-  // twice   → 2 notifications (heure de base + 8h plus tard)
-  // thrice  → 3 notifications (heure, +6h, +12h)
-  // weekly  → 1 notification par semaine
-  // asNeeded→ pas de notification planifiée
-  // ════════════════════════════════════════════════════════════
   Future<void> _planifierNotification({
     required String docId,
     required String nomMed,
     required String heureStr,
     required String frequence,
   }) async {
-    if (frequence == 'asNeeded') return; // Pas de planification pour "si besoin"
-
+    if (frequence == 'asNeeded') return;
     final parts  = NotificationService.parseTime(heureStr);
     final hour   = parts['hour']!;
     final minute = parts['minute']!;
     final baseId = NotificationService.generateId(docId);
 
     try {
-      // Annuler les éventuelles anciennes planifications avant de replanifier
+
       await _annulerNotifications(docId, frequence);
 
       switch (frequence) {
@@ -587,14 +531,12 @@ class _ReminderScreenState extends State<ReminderScreen> {
           break;
 
         case 'twice':
-        // 1ère prise : heure choisie
           await _notifService.scheduleReminderDaily(
             id             : baseId,
             medicationName : '$nomMed (1/2)',
             hour           : hour,
             minute         : minute,
           );
-          // 2ème prise : +8h (modulo 24)
           await _notifService.scheduleReminderDaily(
             id             : baseId + 1,
             medicationName : '$nomMed (2/2)',
@@ -604,21 +546,18 @@ class _ReminderScreenState extends State<ReminderScreen> {
           break;
 
         case 'thrice':
-        // 1ère prise : heure choisie
           await _notifService.scheduleReminderDaily(
             id             : baseId,
             medicationName : '$nomMed (1/3)',
             hour           : hour,
             minute         : minute,
           );
-          // 2ème prise : +6h
           await _notifService.scheduleReminderDaily(
             id             : baseId + 1,
             medicationName : '$nomMed (2/3)',
             hour           : (hour + 6) % 24,
             minute         : minute,
           );
-          // 3ème prise : +12h
           await _notifService.scheduleReminderDaily(
             id             : baseId + 2,
             medicationName : '$nomMed (3/3)',
@@ -641,12 +580,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // ANNULATION DES NOTIFICATIONS D'UN RAPPEL
-  // ────────────────────────────────────────────────────────────
-  // On annule tous les IDs possibles pour ce docId
-  // (baseId, baseId+1, baseId+2 pour twice/thrice)
-  // ════════════════════════════════════════════════════════════
   Future<void> _annulerNotifications(String docId, String frequence) async {
     final baseId = NotificationService.generateId(docId);
     try {
@@ -662,7 +595,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
     }
   }
 
-  // ── Helper : label fréquence ───────────────────────────────
   String _labelFrequence(String freq, AppLocalizations l10n) {
     switch (freq) {
       case 'daily':    return l10n.frequencyDaily;
@@ -675,9 +607,6 @@ class _ReminderScreenState extends State<ReminderScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// FORMULAIRE AJOUTER / MODIFIER UN RAPPEL
-// ═══════════════════════════════════════════════════════════════
 class _FormulaireRappel extends StatefulWidget {
   final String uid;
   final String? docId;
@@ -700,7 +629,6 @@ class _FormulaireRappel extends StatefulWidget {
 }
 
 class _FormulaireRappelState extends State<_FormulaireRappel> {
-  // ── Couleurs sémantiques (conservées fixes) ────────────────
   static const Color red   = Color(0xFFC62828);
   static const Color green = Color(0xFF2E7D32);
 
@@ -752,7 +680,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
     super.dispose();
   }
 
-  // ── Sélecteur d'heure ──────────────────────────────────────
   Future<void> _choisirHeure() async {
     final primary = Theme.of(context).colorScheme.primary;
     final picked  = await showTimePicker(
@@ -770,7 +697,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
     }
   }
 
-  // ── Sauvegarder dans Firestore puis planifier la notif ─────
   Future<void> _sauvegarder() async {
     if (!_formKey.currentState!.validate()) {
       await _vibration.error();
@@ -798,14 +724,12 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
       String savedDocId;
 
       if (widget.docId == null) {
-        // ── Création ───────────────────────────────────────
         donnees['createdAt'] = FieldValue.serverTimestamp();
         final ref = await FirebaseFirestore.instance
             .collection('reminders')
             .add(donnees);
         savedDocId = ref.id;
       } else {
-        // ── Modification ───────────────────────────────────
         await FirebaseFirestore.instance
             .collection('reminders')
             .doc(widget.docId)
@@ -813,8 +737,7 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
         savedDocId = widget.docId!;
       }
 
-      // ── Planifier la notification locale ──────────────────
-      // Le callback remonte vers ReminderScreen qui s'en charge
+
       await widget.onSaved(savedDocId, donnees);
 
       if (mounted) {
@@ -862,12 +785,11 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Titre ──────────────────────────────────────
               Center(
                 child: Text(
                   widget.docId == null
-                      ? '🔔 ${l10n.newReminder}'
-                      : '✏️ ${l10n.editReminder}',
+                      ? ' ${l10n.newReminder}'
+                      : ' ${l10n.editReminder}',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -877,7 +799,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
               ),
               const SizedBox(height: 24),
 
-              // ── Nom du médicament ───────────────────────────
               _label(context, '${l10n.medicationName} *'),
               TextFormField(
                 controller: _nomController,
@@ -889,7 +810,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
               ),
               const SizedBox(height: 16),
 
-              // ── Dosage (optionnel) ──────────────────────────
               _label(context, l10n.dosageOptional),
               TextFormField(
                 controller: _doseController,
@@ -898,7 +818,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
               ),
               const SizedBox(height: 16),
 
-              // ── Heure du rappel ─────────────────────────────
               _label(context, '${l10n.reminderTime} *'),
               GestureDetector(
                 onTap: _choisirHeure,
@@ -939,7 +858,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
               ),
               const SizedBox(height: 16),
 
-              // ── Fréquence ───────────────────────────────────
               _label(context, '${l10n.frequency} *'),
               Container(
                 decoration: BoxDecoration(
@@ -998,7 +916,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
 
               const SizedBox(height: 16),
 
-              // ── Notes ───────────────────────────────────────
               _label(context, l10n.notesOptional),
               TextFormField(
                 controller: _notesController,
@@ -1008,7 +925,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
               ),
               const SizedBox(height: 28),
 
-              // ── Bouton Sauvegarder ──────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -1045,7 +961,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
     );
   }
 
-  // ── Info contextuelle : combien de notifications seront créées ──
   String _infoFrequence(String freq, AppLocalizations l10n) {
     switch (freq) {
       case 'daily':  return l10n.notifInfoDaily;
@@ -1067,7 +982,6 @@ class _FormulaireRappelState extends State<_FormulaireRappel> {
     }
   }
 
-  // ── Helpers ────────────────────────────────────────────────
   Widget _label(BuildContext context, String texte) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),

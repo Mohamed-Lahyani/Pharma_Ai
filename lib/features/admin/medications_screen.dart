@@ -16,8 +16,6 @@ class MedicationsScreen extends StatefulWidget {
 class _MedicationsScreenState extends State<MedicationsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-
-  // ✅ Couleurs sémantiques conservées (statut) — non adaptatives intentionnellement
   static const Color _couleurPrimaire   = Color(0xFF1565C0);
   static const Color _couleurSuccess    = Color(0xFF2E7D32);
   static const Color _couleurWarning    = Color(0xFFF9A825);
@@ -40,48 +38,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
     super.dispose();
   }
 
-  // ─── Supprimer un médicament ──────────────────────────────────
-  /*Future<void> _deleteMedication(
-      String docId, String name, AppLocalizations l10n) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
-        title: Text(l10n.delete),
-        content: Text('$name ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: _couleurDanger),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.delete,
-                style: const TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await FirebaseFirestore.instance
-          .collection('medications')
-          .doc(docId)
-          .delete();
-      await Future.wait([_sound.playError(), _vibration.error()]);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('"$name" supprimé'),
-            backgroundColor: _couleurSuccess,
-          ),
-        );
-      }
-    }
-  }*/
   Future<void> _deleteMedication(
       String docId, String name, AppLocalizations l10n) async {
     final confirmed = await showDialog<bool>(
@@ -114,7 +70,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
             .doc(docId)
             .delete();
 
-        // ✅ Suppression réussie
         await Future.wait([_sound.playError(), _vibration.error()]);
 
         if (mounted) {
@@ -126,7 +81,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
           );
         }
       } catch (e) {
-        // ✅ Erreur suppression Firestore
         await Future.wait([_sound.playError(), _vibration.error()]);
 
         if (mounted) {
@@ -141,7 +95,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
     }
   }
 
-  // ─── Ouvrir le formulaire ─────────────────────────────────────
   void _openMedicationForm({DocumentSnapshot? doc}) {
     showModalBottomSheet(
       context: context,
@@ -161,7 +114,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      // ✅ Fond adaptatif
       backgroundColor: AppColors.background(context),
       appBar: AppBar(
         title: Text(
@@ -169,7 +121,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
           style: const TextStyle(
               color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        // ✅ AppBar adaptative
         backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
@@ -183,8 +134,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
 
       body: Column(
         children: [
-
-          // ── Barre de recherche ────────────────────────────────
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
@@ -192,7 +141,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
               decoration: InputDecoration(
                 hintText: l10n.searchMedication,
                 prefixIcon: Icon(Icons.search,
-                    // ✅ Icône couleur primaire adaptative
                     color: Theme.of(context).colorScheme.primary),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -204,7 +152,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                 )
                     : null,
                 filled: true,
-                // ✅ Fond input adaptatif
                 fillColor: AppColors.inputFill(context),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -212,7 +159,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  // ✅ Bordure adaptative
                   borderSide: BorderSide(
                       color: AppColors.border(context)),
                 ),
@@ -222,7 +168,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
             ),
           ),
 
-          // ── Liste temps réel Firestore ────────────────────────
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -233,7 +178,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(
-                      // ✅ Couleur primaire adaptative
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   );
@@ -248,8 +192,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                   final name = (data['name'] ?? '').toString().toLowerCase();
                   return name.contains(_searchQuery);
                 }).toList();
-
-                // ── Liste vide ──────────────────────────────────
                 if (docs.isEmpty) {
                   return Center(
                     child: Column(
@@ -257,14 +199,12 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                       children: [
                         Icon(Icons.medication_outlined,
                             size: 64,
-                            // ✅ Icône adaptative
                             color: AppColors.textSecondary(context)),
                         const SizedBox(height: 12),
                         Text(
                           _searchQuery.isEmpty
                               ? l10n.medications
                               : '${l10n.searchMedication} : $_searchQuery',
-                          // ✅ Texte adaptatif
                           style: TextStyle(
                               color: AppColors.textSecondary(context)),
                         ),
@@ -293,7 +233,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
-                      // ✅ Couleur de la carte adaptative via le thème
                       color: AppColors.surface(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -308,7 +247,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                             horizontal: 16, vertical: 8),
                         leading: CircleAvatar(
                           backgroundColor: isCritical
-                          // ✅ .withValues() remplace .withOpacity()
                               ? _couleurWarning.withValues(alpha: 0.15)
                               : _couleurPrimaire.withValues(alpha: 0.1),
                           child: Icon(
@@ -323,7 +261,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
-                            // ✅ Texte principal adaptatif
                             color: AppColors.onSurface(context),
                           ),
                         ),
@@ -335,14 +272,12 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                               children: [
                                 Icon(Icons.category_outlined,
                                     size: 13,
-                                    // ✅ Icône adaptative
                                     color: AppColors.textSecondary(context)),
                                 const SizedBox(width: 4),
                                 Text(
                                   data['category'] ?? 'Non défini',
                                   style: TextStyle(
                                       fontSize: 12,
-                                      // ✅ Texte secondaire adaptatif
                                       color: AppColors.textSecondary(context)),
                                 ),
                               ],
@@ -399,7 +334,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                               '${data['price'] ?? 0} DZD',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                // ✅ Couleur primaire adaptative
                                 color: Theme.of(context).colorScheme.primary,
                                 fontSize: 13,
                               ),
@@ -410,7 +344,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                 InkWell(
                                   onTap: () => _openMedicationForm(doc: doc),
                                   child: Icon(Icons.edit_outlined,
-                                      // ✅ Couleur primaire adaptative
                                       color: Theme.of(context)
                                           .colorScheme
                                           .primary,
@@ -437,10 +370,8 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
         ],
       ),
 
-      // ── Bouton flottant ───────────────────────────────────────
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openMedicationForm(),
-        // ✅ Couleur primaire adaptative
         backgroundColor: Theme.of(context).colorScheme.primary,
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(l10n.add,
@@ -449,10 +380,6 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
     );
   }
 }
-
-// ════════════════════════════════════════════════════════════════
-// FORMULAIRE AJOUTER / MODIFIER UN MÉDICAMENT
-// ════════════════════════════════════════════════════════════════
 class _MedicationForm extends StatefulWidget {
   final DocumentSnapshot? doc;
   final List<String>      categories;
@@ -477,7 +404,6 @@ class _MedicationFormState extends State<_MedicationForm> {
   final _vibration = VibrationService();
   final _sound     = SoundService();
 
-  // ✅ Couleurs sémantiques conservées (statut)
   static const Color _couleurDanger  = Color(0xFFC62828);
   static const Color _couleurSuccess = Color(0xFF2E7D32);
 
@@ -527,7 +453,6 @@ class _MedicationFormState extends State<_MedicationForm> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: ColorScheme.light(
-            // ✅ Couleur primaire adaptative dans le DatePicker
             primary: Theme.of(context).colorScheme.primary,
           ),
         ),
@@ -610,7 +535,6 @@ class _MedicationFormState extends State<_MedicationForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              // ── Titre du formulaire ─────────────────────────
               Center(
                 child: Text(
                   widget.doc == null
@@ -619,14 +543,12 @@ class _MedicationFormState extends State<_MedicationForm> {
                   style: TextStyle(
                     fontSize  : 20,
                     fontWeight: FontWeight.bold,
-                    // ✅ Couleur primaire adaptative
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // ── Nom ─────────────────────────────────────────
               _buildLabel(context, l10n.medicationName),
               TextFormField(
                 controller: _nameController,
@@ -638,7 +560,6 @@ class _MedicationFormState extends State<_MedicationForm> {
               ),
               const SizedBox(height: 16),
 
-              // ── Catégorie ────────────────────────────────────
               _buildLabel(context, l10n.category),
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
@@ -657,7 +578,6 @@ class _MedicationFormState extends State<_MedicationForm> {
               ),
               const SizedBox(height: 16),
 
-              // ── Prix + Stock ─────────────────────────────────
               Row(
                 children: [
                   Expanded(
@@ -701,7 +621,6 @@ class _MedicationFormState extends State<_MedicationForm> {
               ),
               const SizedBox(height: 16),
 
-              // ── Date d'expiration ────────────────────────────
               _buildLabel(context, "Date d'expiration"),
               InkWell(
                 onTap: _pickExpiryDate,
@@ -716,7 +635,6 @@ class _MedicationFormState extends State<_MedicationForm> {
                         : DateFormat('dd / MM / yyyy')
                         .format(_selectedExpiryDate!),
                     style: TextStyle(
-                      // ✅ Couleur adaptative selon l'état
                       color: _selectedExpiryDate == null
                           ? AppColors.textSecondary(context)
                           : AppColors.onSurface(context),
@@ -726,7 +644,6 @@ class _MedicationFormState extends State<_MedicationForm> {
               ),
               const SizedBox(height: 16),
 
-              // ── Description ──────────────────────────────────
               _buildLabel(context, 'Description'),
               TextFormField(
                 controller: _descriptionController,
@@ -738,14 +655,12 @@ class _MedicationFormState extends State<_MedicationForm> {
               ),
               const SizedBox(height: 28),
 
-              // ── Bouton Sauvegarder ───────────────────────────
               SizedBox(
                 width : double.infinity,
                 height: 52,
                 child : ElevatedButton(
                   onPressed: _isLoading ? null : _save,
                   style: ElevatedButton.styleFrom(
-                    // ✅ Couleur primaire adaptative
                     backgroundColor:
                     Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(
@@ -774,7 +689,6 @@ class _MedicationFormState extends State<_MedicationForm> {
     );
   }
 
-  // ✅ context ajouté en paramètre pour accéder au thème
   Widget _buildLabel(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -783,25 +697,21 @@ class _MedicationFormState extends State<_MedicationForm> {
         style: TextStyle(
           fontWeight: FontWeight.w600,
           fontSize  : 13,
-          // ✅ Couleur texte label adaptative
           color: AppColors.onSurface(context),
         ),
       ),
     );
   }
 
-  // ✅ context ajouté en paramètre pour accéder au thème
   InputDecoration _inputDecoration(
       BuildContext context, String hint, IconData icon) {
     return InputDecoration(
       hintText  : hint,
       hintStyle : TextStyle(color: AppColors.textSecondary(context)),
       prefixIcon: Icon(icon,
-          // ✅ Couleur primaire adaptative
           color: Theme.of(context).colorScheme.primary,
           size: 20),
       filled    : true,
-      // ✅ Fond input adaptatif
       fillColor : AppColors.inputFill(context),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -809,18 +719,15 @@ class _MedicationFormState extends State<_MedicationForm> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        // ✅ Bordure adaptative
         borderSide: BorderSide(color: AppColors.border(context)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        // ✅ Bordure focus adaptative
         borderSide: BorderSide(
             color: Theme.of(context).colorScheme.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        // ✅ Couleur erreur conservée (sémantique)
         borderSide: const BorderSide(color: _couleurDanger),
       ),
       contentPadding: const EdgeInsets.symmetric(

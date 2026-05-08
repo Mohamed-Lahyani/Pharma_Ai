@@ -15,20 +15,13 @@ class VibrationService {
 
   bool _vibrationEnabled = true;
   bool _hasVibrator      = false;
-  bool _hasAmplitudeControl = false; // ← Nouveau : certains Android ne gèrent pas intensities
+  bool _hasAmplitudeControl = false;
 
-  // ════════════════════════════════════════════════════════════
-  // INITIALISATION
-  // ════════════════════════════════════════════════════════════
 
   Future<void> init() async {
     await _loadPreferences();
-
-    // Vérification vibreur
     final hasVib = await Vibration.hasVibrator();
     _hasVibrator = hasVib == true;
-
-    // ✅ CORRECTION : vérifier si l'appareil supporte le contrôle d'amplitude
     if (_hasVibrator) {
       final hasAmp = await Vibration.hasAmplitudeControl();
       _hasAmplitudeControl = hasAmp == true;
@@ -41,10 +34,6 @@ class VibrationService {
           'Activé : $_vibrationEnabled',
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // PRÉFÉRENCES
-  // ════════════════════════════════════════════════════════════
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
@@ -64,10 +53,6 @@ class VibrationService {
     await setVibrationEnabled(!_vibrationEnabled);
   }
 
-  // ════════════════════════════════════════════════════════════
-  // MÉTHODE INTERNE CORRIGÉE
-  // ════════════════════════════════════════════════════════════
-
   bool get _canVibrate => _vibrationEnabled && _hasVibrator;
 
   /// Vibration avec pattern + intensities si supporté, sinon fallback simple
@@ -79,32 +64,24 @@ class VibrationService {
     if (!_canVibrate) return;
     try {
       if (_hasAmplitudeControl && intensities != null) {
-        // ✅ Appareil supporte les intensités
         await Vibration.vibrate(pattern: pattern, intensities: intensities);
       } else {
-        // ✅ Fallback : pattern sans intensités
         await Vibration.vibrate(pattern: pattern);
       }
     } catch (e) {
-      // ✅ Dernier recours : vibration simple
       try {
         await Vibration.vibrate(duration: fallbackDuration);
       } catch (e2) {
-        // Fallback final via Flutter HapticFeedback (marche même sans plugin)
         await HapticFeedback.mediumImpact();
         debugPrint('[VibrationService] Fallback haptique : $e2');
       }
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // PATTERNS DE VIBRATION
-  // ════════════════════════════════════════════════════════════
-
   /// Vibration légère — feedback simple (appui bouton)
   Future<void> light() async {
     if (!_canVibrate) {
-      await HapticFeedback.lightImpact(); // fallback si pas de vibreur plugin
+      await HapticFeedback.lightImpact();
       return;
     }
     try {

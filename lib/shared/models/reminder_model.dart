@@ -2,8 +2,8 @@ class ReminderModel {
   final String id;
   final String userId;
   final String medicationName;
-  final String time; // ex: "08:30"
-  final String frequency; // "daily", "weekly"
+  final String time;
+  final String frequency;
   final bool active;
 
   ReminderModel({
@@ -15,7 +15,6 @@ class ReminderModel {
     required this.active,
   });
 
-  // Convertir Firestore → ReminderModel
   factory ReminderModel.fromMap(Map<String, dynamic> map, String id) {
     return ReminderModel(
       id: id,
@@ -27,7 +26,6 @@ class ReminderModel {
     );
   }
 
-  // Convertir ReminderModel → Firestore
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,

@@ -8,16 +8,6 @@ import 'package:pharma_ai/shared/widgets/custom_card.dart';
 import 'package:pharma_ai/shared/widgets/status_badge.dart';
 import 'package:pharma_ai/shared/widgets/loading_overlay.dart';
 
-// ═══════════════════════════════════════════════════════════════
-// OrdonnancesAdminScreen — Gestion des ordonnances (Admin)
-//
-// L'admin peut :
-//   - Voir toutes les ordonnances soumises par les clients
-//   - Filtrer par statut : toutes / en attente / validées / rejetées
-//   - Valider une ordonnance → statut "validated" + notification client
-//   - Rejeter une ordonnance → statut "rejected" + motif + notification
-//   - Voir le texte OCR extrait + médicaments détectés
-// ═══════════════════════════════════════════════════════════════
 
 class OrdonnancesAdminScreen extends StatefulWidget {
   const OrdonnancesAdminScreen({super.key});
@@ -28,19 +18,15 @@ class OrdonnancesAdminScreen extends StatefulWidget {
 }
 
 class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
-  // ── Couleurs sémantiques fixes (métier) ────────────────────
   static const Color _vert  = Color(0xFF2E7D32);
   static const Color _ambre = Color(0xFFF9A825);
   static const Color _rouge = Color(0xFFC62828);
 
-  // ── Services son & vibration ───────────────────────────────
   final _sound     = SoundService();
   final _vibration = VibrationService();
 
-  // Filtre actuel
   String _filtre = 'tous';
 
-  // Contrôleur motif de rejet
   final TextEditingController _motifController = TextEditingController();
 
   @override
@@ -63,7 +49,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
         backgroundColor: primary,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
-        // ── Compteur ordonnances en attente ──────────────
         actions: [
           _buildCompteurEnAttente(),
           const SizedBox(width: 8),
@@ -77,10 +62,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // Compteur badge — ordonnances en attente
-  // ════════════════════════════════════════════════════════════
   Widget _buildCompteurEnAttente() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -109,10 +90,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       },
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // Barre de filtres
-  // ════════════════════════════════════════════════════════════
   Widget _buildFiltreBar() {
     final filtres = [
       {'label': 'Toutes',     'valeur': 'tous',      'couleur': Theme.of(context).colorScheme.primary},
@@ -151,12 +128,7 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // Liste des ordonnances en temps réel
-  // ════════════════════════════════════════════════════════════
   Widget _buildListe() {
-    // Construction de la requête selon le filtre
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance
         .collection('ordonnances')
         .orderBy('createdAt', descending: true);
@@ -215,10 +187,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       },
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // Carte d'une ordonnance
-  // ════════════════════════════════════════════════════════════
   Widget _buildCarteOrdonnance(String docId, Map<String, dynamic> data) {
     final statut    = data['status'] ?? 'pending';
     final texte     = data['extractedText'] ?? 'Aucun texte extrait';
@@ -238,7 +206,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
         '${createdAt.minute.toString().padLeft(2, '0')}'
         : '—';
 
-    // Couleur de la carte selon le statut
     final couleurStatut = statut == 'validated'
         ? _vert
         : statut == 'rejected'
@@ -252,7 +219,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          // ── En-tête ──────────────────────────────────────
           leading: Container(
             width: 42,
             height: 42,
@@ -284,13 +250,11 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
               children: [
                 StatusBadge.ordonnance(statut, small: true),
                 const SizedBox(width: 8),
-                // Récupérer le nom du client
                 _buildNomClient(userId),
               ],
             ),
           ),
 
-          // ── Contenu déplié ────────────────────────────────
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -299,9 +263,8 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
                 children: [
                   Divider(color: AppColors.border(context)),
 
-                  // ── Médicaments détectés ─────────────────
                   if (medicines.isNotEmpty) ...[
-                    _sousTitre('💊 Médicaments détectés (${medicines.length})'),
+                    _sousTitre(' Médicaments détectés (${medicines.length})'),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
@@ -325,8 +288,7 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
                     const SizedBox(height: 14),
                   ],
 
-                  // ── Texte OCR extrait ─────────────────────
-                  _sousTitre('📄 Texte OCR extrait'),
+                  _sousTitre(' Texte OCR extrait'),
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
@@ -349,7 +311,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
                     ),
                   ),
 
-                  // ── Motif de rejet (si rejeté) ────────────
                   if (statut == 'rejected' && motifRejet.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Container(
@@ -380,12 +341,10 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
                     ),
                   ],
 
-                  // ── Boutons d'action (seulement si pending) ─
                   if (statut == 'pending') ...[
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        // Valider
                         Expanded(
                           child: CustomButton(
                             label: 'Valider',
@@ -397,7 +356,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        // Rejeter
                         Expanded(
                           child: CustomButton(
                             label: 'Rejeter',
@@ -412,7 +370,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
                     ),
                   ],
 
-                  // ── Bouton repasser en attente (si déjà traité) ─
                   if (statut != 'pending') ...[
                     const SizedBox(height: 12),
                     CustomButton(
@@ -431,10 +388,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // Nom du client depuis Firestore (users collection)
-  // ════════════════════════════════════════════════════════════
   Widget _buildNomClient(String userId) {
     if (userId.isEmpty) return const SizedBox.shrink();
 
@@ -472,12 +425,9 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Action : Valider une ordonnance
-  // ════════════════════════════════════════════════════════════
   Future<void> _validerOrdonnance(String docId, String userId) async {
     final confirme = await _afficherDialogConfirmation(
-      titre: '✅ Valider l\'ordonnance',
+      titre: ' Valider l\'ordonnance',
       message: 'Confirmer la validation de cette ordonnance ?',
       couleurBtn: _vert,
       labelBtn: 'Valider',
@@ -488,7 +438,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
     LoadingOverlay.show(context, message: 'Validation en cours...');
 
     try {
-      // Mettre à jour le statut
       await FirebaseFirestore.instance
           .collection('ordonnances')
           .doc(docId)
@@ -498,10 +447,9 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
         'motifRejet' : '',
       });
 
-      // Envoyer une notification au client
       await _envoyerNotification(
         userId   : userId,
-        titre    : '✅ Ordonnance validée',
+        titre    : ' Ordonnance validée',
         message  : 'Votre ordonnance a été validée. '
             'Vous pouvez récupérer vos médicaments.',
         type     : 'validated',
@@ -510,9 +458,8 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
 
       if (mounted) {
         LoadingOverlay.hide(context);
-        // 🔊 Feedback validation réussie
         await Future.wait([_sound.playValidation(), _vibration.doubleVibrate()]);
-        _showSnack('✅ Ordonnance validée avec succès', _vert);
+        _showSnack(' Ordonnance validée avec succès', _vert);
       }
     } catch (e) {
       await Future.wait([_sound.playError(), _vibration.error()]);
@@ -522,10 +469,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       }
     }
   }
-
-  // ════════════════════════════════════════════════════════════
-  // Action : Rejeter une ordonnance (avec motif)
-  // ════════════════════════════════════════════════════════════
   Future<void> _afficherDialogRejet(String docId, String userId) async {
     _motifController.clear();
 
@@ -536,7 +479,7 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          '❌ Rejeter l\'ordonnance',
+          ' Rejeter l\'ordonnance',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
@@ -606,7 +549,7 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
 
       await _envoyerNotification(
         userId : userId,
-        titre  : '❌ Ordonnance rejetée',
+        titre  : ' Ordonnance rejetée',
         message: _motifController.text.trim().isNotEmpty
             ? 'Motif : ${_motifController.text.trim()}'
             : 'Votre ordonnance a été rejetée. '
@@ -617,9 +560,8 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
 
       if (mounted) {
         LoadingOverlay.hide(context);
-        // 🔊 Feedback rejet
         await Future.wait([_sound.playError(), _vibration.error()]);
-        _showSnack('❌ Ordonnance rejetée', _rouge);
+        _showSnack(' Ordonnance rejetée', _rouge);
       }
     } catch (e) {
       if (mounted) {
@@ -629,10 +571,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       }
     }
   }
-
-  // ════════════════════════════════════════════════════════════
-  // Action : Remettre en attente
-  // ════════════════════════════════════════════════════════════
   Future<void> _remettreEnAttente(String docId) async {
     try {
       await FirebaseFirestore.instance
@@ -645,7 +583,7 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       });
       if (mounted) {
         await Future.wait([_sound.playNotification(), _vibration.light()]);
-        _showSnack('🔄 Remis en attente', _ambre);
+        _showSnack(' Remis en attente', _ambre);
       }
     } catch (e) {
       await Future.wait([_sound.playError(), _vibration.error()]);
@@ -653,9 +591,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // Envoyer une notification dans Firestore (collection notifications)
-  // ════════════════════════════════════════════════════════════
   Future<void> _envoyerNotification({
     required String userId,
     required String titre,
@@ -663,7 +598,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
     required String type,
     required String docId,
   }) async {
-    // Écriture dans la collection "notifications" du client
     await FirebaseFirestore.instance.collection('notifications').add({
       'userId'       : userId,
       'titre'        : titre,
@@ -674,10 +608,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
       'createdAt'    : FieldValue.serverTimestamp(),
     });
   }
-
-  // ════════════════════════════════════════════════════════════
-  // Dialog de confirmation générique
-  // ════════════════════════════════════════════════════════════
   Future<bool> _afficherDialogConfirmation({
     required String titre,
     required String message,
@@ -716,10 +646,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
     );
     return result ?? false;
   }
-
-  // ════════════════════════════════════════════════════════════
-  // État vide
-  // ════════════════════════════════════════════════════════════
   Widget _buildEtatVide() {
     return Center(
       child: Column(
@@ -745,7 +671,6 @@ class _OrdonnancesAdminScreenState extends State<OrdonnancesAdminScreen> {
     );
   }
 
-  // ── Helpers ────────────────────────────────────────────────
 
   Widget _sousTitre(String texte) {
     return Text(

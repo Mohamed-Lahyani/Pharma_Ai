@@ -61,8 +61,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-
-    // Couleurs sémantiques fixes (statut) — intentionnellement non adaptatives
     const Color couleurPrimaire = Color(0xFF1565C0);
     const Color couleurWarning  = Color(0xFFF9A825);
     const Color couleurDanger   = Color(0xFFC62828);
@@ -83,14 +81,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             tooltip: l10n.settings,
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
-         /* IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: l10n.signOut,
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushReplacementNamed(context, '/');
-            },
-          ),*/
         ],
       ),
       body: _isLoading
@@ -103,8 +93,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              // ── Bannière de bienvenue ─────────────────
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -162,7 +150,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     icone  : Icons.medication,
                     couleur: couleurPrimaire,
                   ),
-                  // ✅ Carte cliquable → OrdonnancesAdminScreen
                   GestureDetector(
                     onTap: () => Navigator.push(
                       context,
@@ -204,8 +191,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
 
               const SizedBox(height: 12),
-
-              // ── Gérer les médicaments ─────────────────
               _buildActionButton(
                 titre    : l10n.manageMedications,
                 sousTitre: l10n.addMedication,
@@ -220,8 +205,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
 
               const SizedBox(height: 10),
-
-              // ✅ Voir les ordonnances → OrdonnancesAdminScreen
               _buildActionButton(
                 titre    : l10n.viewPrescriptions,
                 sousTitre: '$pendingOrdonnances ${l10n.pending}',
@@ -236,8 +219,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
 
               const SizedBox(height: 10),
-
-              // ── Alertes stock (à brancher plus tard) ──
               _buildActionButton(
                 titre    : l10n.stockAlerts,
                 sousTitre: '$lowStockMedications ${l10n.criticalStock}',
@@ -265,8 +246,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
-
-  // ── Carte statistique ──────────────────────────────────────
   Widget _buildStatCard({
     required String   titre,
     required String   valeur,
@@ -322,8 +301,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
-
-  // ── Bouton action rapide ───────────────────────────────────
   Widget _buildActionButton({
     required String       titre,
     required String       sousTitre,
